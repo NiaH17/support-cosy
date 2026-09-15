@@ -6,6 +6,7 @@ import HubPage from './pages/HubPage'
 import TroubleshootingPage from './pages/TroubleshootingPage'
 import InfoPage from './pages/InfoPage'
 import SupportPage from './pages/SupportPage'
+import AdminPage from './pages/AdminPage'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -15,6 +16,12 @@ function ScrollToTop() {
 
 function ProtectedRoute({ session, children }) {
   if (!session) return <Navigate to="/connexion" replace />
+  return children
+}
+
+function AdminRoute({ session, children }) {
+  if (!session) return <Navigate to="/connexion" replace />
+  if (session.user?.user_metadata?.role !== 'admin') return <Navigate to="/" replace />
   return children
 }
 
@@ -51,6 +58,9 @@ export default function App() {
         } />
         <Route path="/assistance" element={
           <ProtectedRoute session={session}><SupportPage session={session} /></ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <AdminRoute session={session}><AdminPage session={session} /></AdminRoute>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

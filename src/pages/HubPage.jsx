@@ -32,7 +32,7 @@ const ACTIONS = [
   {
     id: 'assistance',
     route: '/assistance',
-    label: 'Demande d\'assistance',
+    label: "Demande d'assistance",
     subtitle: 'Contacter le support technique',
     bg: 'bg-pink-50',
     color: 'text-brand-pink',
@@ -46,6 +46,7 @@ const ACTIONS = [
 
 export default function HubPage({ session }) {
   const navigate = useNavigate()
+  const role = session?.user?.user_metadata?.role
   const name = session?.user?.user_metadata?.full_name || session?.user?.email || ''
 
   async function handleSignOut() {
@@ -55,7 +56,6 @@ export default function HubPage({ session }) {
 
   return (
     <div className="min-h-screen bg-gray-50 safe-top safe-bottom">
-      {/* Header */}
       <div className="bg-gradient-to-br from-brand-purple to-brand-pink px-6 pt-6 pb-8">
         <div className="flex items-center justify-between mb-5">
           <div />
@@ -76,14 +76,10 @@ export default function HubPage({ session }) {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="px-6 py-6 space-y-3">
         {ACTIONS.map(action => (
-          <button
-            key={action.id}
-            onClick={() => navigate(action.route)}
-            className="w-full card flex items-center gap-4 active:bg-gray-50 transition-colors"
-          >
+          <button key={action.id} onClick={() => navigate(action.route)}
+            className="w-full card flex items-center gap-4 active:bg-gray-50 transition-colors">
             <div className={`w-12 h-12 rounded-2xl ${action.bg} flex items-center justify-center flex-shrink-0 ${action.color}`}>
               {action.icon}
             </div>
@@ -96,12 +92,30 @@ export default function HubPage({ session }) {
             </svg>
           </button>
         ))}
+
+        {role === 'admin' && (
+          <div className="pt-2">
+            <button onClick={() => navigate('/admin')}
+              className="w-full card flex items-center gap-4 active:bg-gray-50 transition-colors border-brand-navy/10">
+              <div className="w-12 h-12 rounded-2xl bg-brand-navy/5 flex items-center justify-center flex-shrink-0 text-brand-navy">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-brand-navy">Admin — Demandes</p>
+                <p className="text-sm text-gray-500 mt-0.5">Voir & répondre aux demandes</p>
+              </div>
+              <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="px-6 pb-8">
-        <p className="text-center text-xs text-gray-400">
-          Support Cosy — Octopus Energy France
-        </p>
+        <p className="text-center text-xs text-gray-400">Support Cosy — Octopus Energy France</p>
       </div>
     </div>
   )
