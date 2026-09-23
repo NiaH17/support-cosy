@@ -7,6 +7,7 @@ import TroubleshootingPage from './pages/TroubleshootingPage'
 import InfoPage from './pages/InfoPage'
 import SupportPage from './pages/SupportPage'
 import AdminPage from './pages/AdminPage'
+import UserTicketsPage from './pages/UserTicketsPage'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -58,6 +59,9 @@ export default function App() {
         } />
         <Route path="/assistance" element={
           <ProtectedRoute session={session}><SupportPage session={session} /></ProtectedRoute>
+        } />
+        <Route path="/mes-demandes" element={
+          <ProtectedRoute session={session}><UserTicketsPage session={session} /></ProtectedRoute>
         } />
         <Route path="/admin" element={
           <AdminRoute session={session}><AdminPage session={session} /></AdminRoute>
