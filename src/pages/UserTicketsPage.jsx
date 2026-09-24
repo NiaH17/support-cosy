@@ -2,53 +2,64 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
-const STATUS = {
-  open:        { label: 'Ouvert',    bg: 'bg-blue-100',   text: 'text-blue-700' },
-  in_progress: { label: 'En cours',  bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  resolved:    { label: 'Résolu',    bg: 'bg-green-100',  text: 'text-green-700' },
-  closed:      { label: 'Fermé',     bg: 'bg-gray-100',   text: 'text-gray-500' },
+const ISSUE_LABELS = {
+  electrical: 'Problème électrique', mechanical: 'Problème mécanique',
+  fault_code: 'Code erreur', performance: 'Mauvaises performances',
+  commissioning: 'Mise en service', noise: 'Bruit inhabituel',
+  connectivity: 'Connectivité', other: 'Autre',
 }
-const URGENCY = {
-  low:    { label: 'Faible',  bg: 'bg-green-100',  text: 'text-green-700' },
-  medium: { label: 'Normale', bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  high:   { label: 'Urgente', bg: 'bg-red-100',    text: 'text-red-600' },
+const STATUS_FR = {
+  open:        { label: 'Ouvert',      bg: 'bg-blue-100',   text: 'text-blue-700' },
+  in_progress: { label: 'En cours',    bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  resolved:    { label: 'Résolu',      bg: 'bg-green-100',  text: 'text-green-700' },
+  closed:      { label: 'Fermé',       bg: 'bg-gray-100',   text: 'text-gray-500' },
 }
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 }
 function Badge({ value, map }) {
   const s = map[value] || { label: value, bg: 'bg-gray-100', text: 'text-gray-500' }
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>{s.label}</span>
 }
 
-function MessageBubble({ msg }) {
-  const isAdmin = msg.sender === 'admin'
+// ── Notification banner ───────────────────────────────────────────────────────
+
+function NotificationBanner({ notifications, onView, onDismiss }) {
+  if (notifications.length === 0) return null
+  const n = notifications[0]
   return (
-    <div className={`flex mb-3 ${isAdmin ? 'justify-start' : 'justify-end'}`}>
-      <div className={`max-w-xs rounded-2xl px-4 py-3 ${
-        isAdmin
-          ? 'bg-white border border-gray-200 rounded-tl-sm'
-          : 'bg-brand-purple text-white rounded-tr-sm'
-      }`}>
-        <p className={`text-xs font-semibold mb-1 ${isAdmin ? 'text-gray-400' : 'text-white/70'}`}>
-          {isAdmin ? 'Octopus Energy' : 'Vous'}
-        </p>
-        <p className={`text-sm leading-relaxed ${isAdmin ? 'text-brand-navy' : 'text-white'}`}>
-          {msg.message_fr || msg.message_en}
-        </p>
-        <p className={`text-xs mt-1.5 ${isAdmin ? 'text-gray-400' : 'text-white/50'}`}>
-          {formatDate(msg.created_at)}
-        </p>
+    <div className="fixed top-0 left-0 right-0 z-50 px-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)' }}>
+      <div className="mt-2 bg-brand-navy border border-brand-purple/40 rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center flex-shrink-0">
+          <svg className="w-4 h-4 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-xs font-bold">Octopus Energy a répondu</p>
+          <p className="text-white/60 text-xs truncate">{n.issue} — {formatDate(n.created_at)}</p>
+        </div>
+        <button onClick={() => onView(n)} className="flex-shrink-0 bg-brand-purple text-white text-xs font-semibold px-3 py-1.5 rounded-xl">
+          Voir
+        </button>
+        <button onClick={() => onDismiss(n.id)} className="flex-shrink-0 text-white/40 text-lg leading-none">×</button>
       </div>
+      {notifications.length > 1 && (
+        <p className="text-center text-white/40 text-xs mt-1">+{notifications.length - 1} autre(s)</p>
+      )}
     </div>
   )
 }
 
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function UserTicketsPage({ session }) {
   const navigate = useNavigate()
   const threadRef = useRef(null)
-  const [tickets, setTickets] = useState([])
+  const requestsRef = useRef([])
+  const selectedRef = useRef(null)
+  const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const [messages, setMessages] = useState([])
@@ -56,147 +67,172 @@ export default function UserTicketsPage({ session }) {
   const [replyText, setReplyText] = useState('')
   const [replySending, setReplySending] = useState(false)
   const [resolving, setResolving] = useState(false)
+  const [notifications, setNotifications] = useState([])
 
-  useEffect(() => { loadTickets() }, [])
+  useEffect(() => { requestsRef.current = requests }, [requests])
+  useEffect(() => { selectedRef.current = selected }, [selected])
 
-  async function loadTickets() {
+  useEffect(() => {
+    loadRequests()
+
+    const channel = supabase
+      .channel('user-messages')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'fr_support_messages',
+        filter: 'sender=eq.admin',
+      }, (payload) => {
+        const msg = payload.new
+        if (msg.is_internal) return
+
+        const currentSelected = selectedRef.current
+        // If already viewing this ticket, append inline
+        if (currentSelected?.id === msg.request_id) {
+          setMessages(m => [...m, msg])
+          setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
+          return
+        }
+
+        // Only notify for the user's own tickets
+        const req = requestsRef.current.find(r => r.id === msg.request_id)
+        if (!req) return
+
+        setNotifications(n => [...n, {
+          id: msg.id,
+          request_id: msg.request_id,
+          issue: ISSUE_LABELS[req.issue_type] || req.issue_type,
+          created_at: msg.created_at,
+          req,
+        }])
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  async function loadRequests() {
     const { data } = await supabase
       .from('fr_support_requests')
       .select('*')
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false })
-    setTickets(data || [])
+    setRequests(data || [])
     setLoading(false)
   }
 
-  async function selectTicket(ticket) {
-    setSelected(ticket)
+  async function selectTicket(req) {
+    setSelected(req)
     setReplyText('')
     const { data } = await supabase
       .from('fr_support_messages')
       .select('*')
-      .eq('request_id', ticket.id)
+      .eq('request_id', req.id)
       .eq('is_internal', false)
       .order('created_at', { ascending: true })
     setMessages(data || [])
     setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
   }
 
+  function viewNotification(n) {
+    setNotifications(prev => prev.filter(x => x.id !== n.id))
+    if (n.req) selectTicket(n.req)
+  }
+  function dismissNotification(id) {
+    setNotifications(prev => prev.filter(x => x.id !== id))
+  }
+
   async function sendReply() {
     if (!replyText.trim()) return
     setReplySending(true)
-    const res = await fetch('/api/translate-message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        request_id: selected.id,
-        message: replyText.trim(),
-        sender: 'user',
-        is_internal: false,
-      }),
-    })
-    if (res.ok) {
-      const { message } = await res.json()
-      setMessages(m => [...m, message])
-      setReplyText('')
-      setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
-    }
+    try {
+      const res = await fetch('/api/translate-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: selected.id, message: replyText.trim(), sender: 'user', is_internal: false }),
+      })
+      if (res.ok) {
+        const { message } = await res.json()
+        setMessages(m => [...m, message])
+        setReplyText('')
+        setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
+      } else {
+        const err = await res.json()
+        alert('Erreur : ' + err.error)
+      }
+    } catch (e) { alert('Erreur réseau : ' + e.message) }
     setReplySending(false)
   }
 
-  async function resolveTicket() {
+  async function markResolved() {
     setResolving(true)
-    const { error } = await supabase
-      .from('fr_support_requests')
-      .update({ status: 'resolved' })
-      .eq('id', selected.id)
-    if (!error) {
-      setTickets(ts => ts.map(t => t.id === selected.id ? { ...t, status: 'resolved' } : t))
-      setSelected(s => ({ ...s, status: 'resolved' }))
-    }
+    await supabase.from('fr_support_requests').update({ status: 'resolved' }).eq('id', selected.id)
+    setRequests(rs => rs.map(r => r.id === selected.id ? { ...r, status: 'resolved' } : r))
+    setSelected(s => ({ ...s, status: 'resolved' }))
     setResolving(false)
   }
 
   const TABS = [['active', 'En cours'], ['resolved', 'Résolus'], ['all', 'Tout']]
-  const filtered = filter === 'all'
-    ? tickets
-    : filter === 'active'
-    ? tickets.filter(t => t.status === 'open' || t.status === 'in_progress')
-    : tickets.filter(t => t.status === 'resolved' || t.status === 'closed')
+  const filtered = filter === 'active'
+    ? requests.filter(r => ['open','in_progress'].includes(r.status))
+    : filter === 'resolved'
+      ? requests.filter(r => ['resolved','closed'].includes(r.status))
+      : requests
 
-  // ── Ticket detail ────────────────────────────────────────────────────────────
-
-  if (selected) {
-    const isResolved = selected.status === 'resolved' || selected.status === 'closed'
+  // ── List view ────────────────────────────────────────────────────────────────
+  if (!selected) {
     return (
-      <div className="min-h-screen bg-gray-50 safe-top safe-bottom flex flex-col">
-        <div className="bg-brand-navy px-6 pt-6 pb-5 flex-shrink-0">
-          <div className="flex items-center gap-3 mb-1">
-            <button onClick={() => setSelected(null)} className="text-white/70">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+      <div className="min-h-screen bg-gray-50 safe-top safe-bottom">
+        <NotificationBanner notifications={notifications} onView={viewNotification} onDismiss={dismissNotification} />
+        <div className="bg-brand-navy px-6 pt-6 pb-4 sticky top-0 z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <button onClick={() => navigate('/')} className="text-white/70">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
-            <div className="flex-1">
-              <h1 className="text-white font-bold">Ma demande</h1>
-              <p className="text-white/50 text-xs">{formatDate(selected.created_at)}</p>
-            </div>
-            <div className="flex gap-1.5">
-              <Badge value={selected.urgency} map={URGENCY} />
-              <Badge value={selected.status} map={STATUS} />
-            </div>
+            <h1 className="text-white font-bold text-lg">Mes demandes</h1>
+          </div>
+          <div className="flex gap-2">
+            {TABS.map(([val, label]) => (
+              <button key={val} onClick={() => setFilter(val)}
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-xl transition-colors ${filter === val ? 'bg-white text-brand-navy' : 'bg-white/20 text-white'}`}>
+                {label}
+              </button>
+            ))}
           </div>
         </div>
-
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-
-          {/* Original request summary */}
-          <div className="card bg-gray-50">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Votre demande initiale</p>
-            <p className="text-sm text-brand-navy font-semibold mb-1">{selected.issue_type}</p>
-            {selected.fault_code && (
-              <p className="text-xs text-red-600 font-mono mb-1">Code défaut : {selected.fault_code}</p>
-            )}
-            <p className="text-sm text-gray-600 leading-relaxed">{selected.description_fr}</p>
-          </div>
-
-          {/* Message thread */}
-          {messages.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Messages</p>
-              <div ref={threadRef}>
-                {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
-              </div>
-            </div>
-          )}
-
-          {/* Reply or resolved state */}
-          {isResolved ? (
-            <div className="card text-center py-6">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="font-semibold text-brand-navy">Demande résolue</p>
-              <p className="text-sm text-gray-500 mt-1">Merci de nous avoir contactés.</p>
+        <div className="px-6 py-4 pb-12">
+          {loading ? (
+            <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" /></div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400 text-sm mb-4">Aucune demande</p>
+              <button onClick={() => navigate('/assistance')} className="btn-primary text-sm px-5 py-2.5">Nouvelle demande</button>
             </div>
           ) : (
             <div className="space-y-3">
-              <div>
-                <label className="form-label">Répondre</label>
-                <textarea
-                  className="input-field resize-none" rows={3}
-                  placeholder="Écrivez votre message en français…"
-                  value={replyText} onChange={e => setReplyText(e.target.value)} />
-                <button onClick={sendReply} disabled={replySending || !replyText.trim()} className="btn-primary mt-2 text-sm py-2.5">
-                  {replySending ? 'Envoi…' : 'Envoyer'}
-                </button>
-              </div>
-              <button onClick={resolveTicket} disabled={resolving}
-                className="w-full py-3 rounded-2xl border-2 border-green-200 text-green-700 bg-green-50 text-sm font-semibold active:bg-green-100 transition-colors">
-                {resolving ? 'En cours…' : '✓ Marquer comme résolu'}
-              </button>
+              {filtered.map(req => {
+                const hasNotif = notifications.some(n => n.request_id === req.id)
+                return (
+                  <button key={req.id} onClick={() => selectTicket(req)}
+                    className={`w-full bg-white rounded-2xl border shadow-sm px-4 py-4 text-left transition-colors ${hasNotif ? 'border-brand-pink/30 active:bg-pink-50' : 'border-gray-100 active:bg-gray-50'}`}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex gap-1.5 flex-wrap items-center">
+                        <Badge value={req.status} map={STATUS_FR} />
+                        {hasNotif && (
+                          <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-pink/10 text-brand-pink">
+                            <span className="w-1.5 h-1.5 rounded-full bg-brand-pink animate-pulse" />
+                            Nouvelle réponse
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(req.created_at)}</span>
+                    </div>
+                    <p className="font-semibold text-sm text-brand-navy">{ISSUE_LABELS[req.issue_type] || req.issue_type}</p>
+                    {req.installation_company && <p className="text-xs text-gray-500 mt-0.5">{req.installation_company}</p>}
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">{req.description_fr}</p>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -204,66 +240,94 @@ export default function UserTicketsPage({ session }) {
     )
   }
 
-  // ── Ticket list ──────────────────────────────────────────────────────────────
-
+  // ── Detail view ──────────────────────────────────────────────────────────────
+  const isResolved = ['resolved','closed'].includes(selected.status)
   return (
-    <div className="min-h-screen bg-gray-50 safe-top safe-bottom">
-      <div className="bg-brand-navy px-6 pt-6 pb-4 sticky top-0 z-10">
-        <div className="flex items-center gap-3 mb-4">
-          <button onClick={() => navigate('/')} className="text-white/70">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+    <div className="min-h-screen bg-gray-50 safe-top safe-bottom flex flex-col">
+      <NotificationBanner notifications={notifications} onView={viewNotification} onDismiss={dismissNotification} />
+      <div className="bg-brand-navy px-6 pt-6 pb-4 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setSelected(null)} className="text-white/70">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <h1 className="text-white font-bold text-lg">Mes demandes</h1>
-          <span className="ml-auto text-white/40 text-sm">{tickets.length}</span>
-        </div>
-        <div className="flex gap-2">
-          {TABS.map(([val, label]) => (
-            <button key={val} onClick={() => setFilter(val)}
-              className={`flex-1 text-xs font-semibold py-1.5 rounded-xl transition-colors ${
-                filter === val ? 'bg-white text-brand-navy' : 'bg-white/20 text-white'
-              }`}>
-              {label}
-            </button>
-          ))}
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold">{ISSUE_LABELS[selected.issue_type] || selected.issue_type}</p>
+            <p className="text-white/50 text-xs">{formatDate(selected.created_at)}</p>
+          </div>
+          <Badge value={selected.status} map={STATUS_FR} />
         </div>
       </div>
 
-      <div className="px-6 py-4 pb-12">
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-6 h-6 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" />
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 pb-6">
+        <div className="card space-y-2 text-sm">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Votre demande</p>
+          {selected.installation_company && (
+            <div className="flex gap-2">
+              <span className="text-gray-400 w-28 flex-shrink-0">Entreprise</span>
+              <span className="text-brand-navy font-medium">{selected.installation_company}</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <span className="text-gray-400 w-28 flex-shrink-0">Adresse</span>
+            <span className="text-brand-navy font-medium">{selected.site_address}</span>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400 text-sm">Aucune demande</p>
-            <button onClick={() => navigate('/assistance')} className="mt-4 btn-primary max-w-xs mx-auto text-sm py-2.5">
-              Soumettre une demande
-            </button>
+          {selected.fault_code && (
+            <div className="flex gap-2">
+              <span className="text-gray-400 w-28 flex-shrink-0">Code(s) erreur</span>
+              <span className="text-brand-navy font-medium">{selected.fault_code}</span>
+            </div>
+          )}
+          <p className="text-gray-600 mt-2 pt-2 border-t border-gray-100 leading-relaxed">{selected.description_fr}</p>
+        </div>
+
+        {/* Thread */}
+        <div className="card p-0 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Échanges</p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map(ticket => (
-              <button key={ticket.id} onClick={() => selectTicket(ticket)}
-                className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4 text-left active:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex gap-1.5">
-                    <Badge value={ticket.urgency} map={URGENCY} />
-                    <Badge value={ticket.status} map={STATUS} />
+          <div ref={threadRef} className="px-4 py-3 overflow-y-auto" style={{ maxHeight: 320 }}>
+            {messages.length === 0
+              ? <p className="text-center text-gray-400 text-xs py-4">Aucun message pour l'instant</p>
+              : messages.map(msg => {
+                const isUser = msg.sender === 'user'
+                return (
+                  <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
+                    <div className={`max-w-xs rounded-2xl px-4 py-3 ${isUser ? 'bg-brand-purple text-white rounded-tr-sm' : 'bg-white border border-gray-200 rounded-tl-sm'}`}>
+                      <p className={`text-xs font-semibold mb-1 ${isUser ? 'text-white/70' : 'text-gray-400'}`}>
+                        {isUser ? 'Vous' : 'Octopus Energy'}
+                      </p>
+                      <p className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-brand-navy'}`}>
+                        {isUser ? msg.message_fr : (msg.message_fr || msg.message_en)}
+                      </p>
+                      <p className={`text-xs mt-1.5 ${isUser ? 'text-white/50' : 'text-gray-400'}`}>{formatDate(msg.created_at)}</p>
+                    </div>
                   </div>
-                  <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(ticket.created_at)}</span>
-                </div>
-                <p className="font-semibold text-sm text-brand-navy">{ticket.issue_type}</p>
-                {ticket.fault_code && (
-                  <p className="text-xs text-red-500 font-mono mt-0.5">Code défaut : {ticket.fault_code}</p>
-                )}
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{ticket.description_fr}</p>
-                {ticket.site_address && (
-                  <p className="text-xs text-gray-400 mt-1">{ticket.site_address}</p>
-                )}
+                )
+              })
+            }
+          </div>
+        </div>
+
+        {!isResolved ? (
+          <>
+            <div className="card space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Répondre</p>
+              <textarea className="input-field resize-none text-sm" rows={3}
+                placeholder="Écrivez votre réponse en français…"
+                value={replyText} onChange={e => setReplyText(e.target.value)} />
+              <button onClick={sendReply} disabled={replySending || !replyText.trim()} className="btn-primary text-sm py-2.5">
+                {replySending ? 'Envoi…' : 'Envoyer'}
               </button>
-            ))}
+            </div>
+            <button onClick={markResolved} disabled={resolving}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-green-100 text-green-700 border border-green-200">
+              {resolving ? 'En cours…' : '✓ Marquer comme résolu'}
+            </button>
+          </>
+        ) : (
+          <div className="text-center bg-green-50 rounded-2xl border border-green-100 py-5 px-4">
+            <p className="text-green-700 font-semibold text-sm">Demande résolue</p>
+            <p className="text-green-600 text-xs mt-1">Merci d'avoir contacté Octopus Energy.</p>
           </div>
         )}
       </div>

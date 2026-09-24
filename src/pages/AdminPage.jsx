@@ -27,7 +27,6 @@ const ISSUE_LABELS = {
 function formatDate(iso) {
   return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
-
 function Badge({ value, map }) {
   const s = map[value] || { label: value, bg: 'bg-gray-100', text: 'text-gray-500' }
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>{s.label}</span>
@@ -36,7 +35,6 @@ function Badge({ value, map }) {
 function MessageBubble({ msg }) {
   const [showFr, setShowFr] = useState(false)
   const isUser = msg.sender === 'user'
-
   if (msg.is_internal) {
     return (
       <div className="flex justify-center my-2">
@@ -48,7 +46,6 @@ function MessageBubble({ msg }) {
       </div>
     )
   }
-
   return (
     <div className={`flex ${isUser ? 'justify-start' : 'justify-end'} mb-3`}>
       <div className={`max-w-xs rounded-2xl px-4 py-3 ${isUser ? 'bg-white border border-gray-200 rounded-tl-sm' : 'bg-brand-purple text-white rounded-tr-sm'}`}>
@@ -84,9 +81,42 @@ function MessageBubble({ msg }) {
   )
 }
 
+// ── Notification banner ───────────────────────────────────────────────────────
+
+function NotificationBanner({ notifications, onView, onDismiss }) {
+  if (notifications.length === 0) return null
+  const n = notifications[0]
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-safe-top" style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}>
+      <div className="mt-2 bg-brand-navy border border-brand-purple/40 rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center flex-shrink-0">
+          <svg className="w-4 h-4 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-xs font-bold">New message from installer</p>
+          <p className="text-white/60 text-xs truncate">{n.company} — {n.issue}</p>
+        </div>
+        <button onClick={() => onView(n)} className="flex-shrink-0 bg-brand-purple text-white text-xs font-semibold px-3 py-1.5 rounded-xl">
+          View
+        </button>
+        <button onClick={() => onDismiss(n.id)} className="flex-shrink-0 text-white/40 text-lg leading-none">×</button>
+      </div>
+      {notifications.length > 1 && (
+        <p className="text-center text-white/40 text-xs mt-1">+{notifications.length - 1} more</p>
+      )}
+    </div>
+  )
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function AdminPage({ session }) {
   const navigate = useNavigate()
   const threadRef = useRef(null)
+  const requestsRef = useRef([])
+  const selectedRef = useRef(null)
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
@@ -100,8 +130,49 @@ export default function AdminPage({ session }) {
   const [replySending, setReplySending] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [noteSending, setNoteSending] = useState(false)
+  const [notifications, setNotifications] = useState([])
 
-  useEffect(() => { loadRequests() }, [])
+  // Keep refs in sync so realtime callback can read latest state
+  useEffect(() => { requestsRef.current = requests }, [requests])
+  useEffect(() => { selectedRef.current = selected }, [selected])
+
+  useEffect(() => {
+    loadRequests()
+
+    // Realtime: listen for new messages from installers
+    const channel = supabase
+      .channel('admin-messages')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'fr_support_messages',
+        filter: 'sender=eq.user',
+      }, (payload) => {
+        const msg = payload.new
+        if (msg.is_internal) return
+
+        const currentSelected = selectedRef.current
+        // If we're already viewing this ticket, append the message
+        if (currentSelected?.id === msg.request_id) {
+          setMessages(m => [...m, msg])
+          setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
+          return
+        }
+
+        // Otherwise show a notification banner
+        const req = requestsRef.current.find(r => r.id === msg.request_id)
+        setNotifications(n => [...n, {
+          id: msg.id,
+          request_id: msg.request_id,
+          company: req?.installation_company || req?.user_email || 'Installer',
+          issue: req ? (ISSUE_LABELS[req.issue_type] || req.issue_type) : 'Support request',
+          req,
+        }])
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
 
   async function loadRequests() {
     const { data } = await supabase.from('fr_support_requests').select('*').order('created_at', { ascending: false })
@@ -124,6 +195,14 @@ export default function AdminPage({ session }) {
     const { data } = await supabase.from('fr_support_messages').select('*').eq('request_id', req.id).order('created_at', { ascending: true })
     setMessages(data || [])
     setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
+  }
+
+  function viewNotification(n) {
+    setNotifications(prev => prev.filter(x => x.id !== n.id))
+    if (n.req) selectTicket(n.req)
+  }
+  function dismissNotification(id) {
+    setNotifications(prev => prev.filter(x => x.id !== id))
   }
 
   async function saveTriage() {
@@ -163,9 +242,7 @@ export default function AdminPage({ session }) {
         const err = await res.json()
         alert('Send failed: ' + err.error)
       }
-    } catch (e) {
-      alert('Network error: ' + e.message)
-    }
+    } catch (e) { alert('Network error: ' + e.message) }
     setReplySending(false)
   }
 
@@ -200,6 +277,7 @@ export default function AdminPage({ session }) {
   if (!selected) {
     return (
       <div className="min-h-screen bg-gray-50 safe-top safe-bottom">
+        <NotificationBanner notifications={notifications} onView={viewNotification} onDismiss={dismissNotification} />
         <div className="bg-brand-navy px-6 pt-6 pb-4 sticky top-0 z-10">
           <div className="flex items-center gap-3 mb-4">
             <button onClick={() => navigate('/')} className="text-white/70">
@@ -233,6 +311,9 @@ export default function AdminPage({ session }) {
                       <Badge value={req.urgency} map={URGENCY} />
                       <Badge value={req.status} map={STATUS} />
                       {req.confirmed_issue && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-purple/10 text-brand-purple">{req.confirmed_issue}</span>}
+                      {notifications.some(n => n.request_id === req.id) && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-pink/10 text-brand-pink animate-pulse">New message</span>
+                      )}
                     </div>
                     <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(req.created_at)}</span>
                   </div>
@@ -251,7 +332,7 @@ export default function AdminPage({ session }) {
   // ── Detail view ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 safe-top safe-bottom">
-      {/* Header */}
+      <NotificationBanner notifications={notifications} onView={viewNotification} onDismiss={dismissNotification} />
       <div className="bg-brand-navy px-6 pt-6 pb-4 sticky top-0 z-10">
         <div className="flex items-center gap-3 mb-2">
           <button onClick={() => setSelected(null)} className="text-white/70">
@@ -266,21 +347,21 @@ export default function AdminPage({ session }) {
             <Badge value={selected.status} map={STATUS} />
           </div>
         </div>
-        {/* Mobile tabs */}
         <div className="flex gap-2 md:hidden">
           {[['details','Details'],['triage','Triage & Messages']].map(([t, l]) => (
             <button key={t} onClick={() => setDetailTab(t)}
               className={`flex-1 text-xs font-semibold py-1.5 rounded-xl transition-colors ${detailTab === t ? 'bg-white text-brand-navy' : 'bg-white/20 text-white'}`}>
               {l}
+              {t === 'triage' && notifications.some(n => n.request_id === selected.id) && (
+                <span className="ml-1.5 w-2 h-2 rounded-full bg-brand-pink inline-block" />
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Body */}
       <div className="md:flex md:gap-4 md:px-6 md:py-4 md:items-start pb-12">
-
-        {/* ── Details panel ── */}
+        {/* Details panel */}
         <div className={`md:flex-1 md:block px-6 py-4 md:px-0 md:py-0 space-y-4 ${detailTab === 'details' ? 'block' : 'hidden'}`}>
           <div className="card space-y-2.5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Submission details</p>
@@ -303,19 +384,14 @@ export default function AdminPage({ session }) {
               <span className="text-brand-navy">{formatDate(selected.created_at)}</span>
             </div>
           </div>
-
           <div className="card">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Description (English)</p>
-            <p className="text-sm text-brand-navy leading-relaxed">
-              {selected.description_en || <span className="italic text-gray-400">Translation not available</span>}
-            </p>
+            <p className="text-sm text-brand-navy leading-relaxed">{selected.description_en || <span className="italic text-gray-400">Translation not available</span>}</p>
           </div>
-
           <div className="card bg-gray-50">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Original (French)</p>
             <p className="text-sm text-gray-600 leading-relaxed">{selected.description_fr}</p>
           </div>
-
           {selected.photo_urls?.length > 0 && (
             <div className="card">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Photos ({selected.photo_urls.length})</p>
@@ -330,17 +406,14 @@ export default function AdminPage({ session }) {
           )}
         </div>
 
-        {/* ── Triage panel ── */}
+        {/* Triage panel */}
         <div className={`md:flex-1 md:block px-6 py-4 md:px-0 md:py-0 space-y-4 ${detailTab === 'triage' ? 'block' : 'hidden'}`}>
-
-          {/* Triage fields */}
           <div className="card space-y-4">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Triage</p>
-
             <div>
               <label className="form-label text-xs">Part replacement needed?</label>
               <div className="flex gap-2 mt-1">
-                {[['yes', 'Yes'], ['no', 'No']].map(([v, l]) => (
+                {[['yes','Yes'],['no','No']].map(([v, l]) => (
                   <button key={v} type="button"
                     onClick={() => setTriage(t => ({ ...t, part_needed: v === 'yes' }))}
                     className={`flex-1 py-2 rounded-xl border text-sm font-semibold transition-colors ${
@@ -357,14 +430,12 @@ export default function AdminPage({ session }) {
                   onChange={e => setTriage(t => ({ ...t, part_details: e.target.value }))} />
               )}
             </div>
-
             <div>
               <label className="form-label text-xs">Kraken account number</label>
               <input type="text" className="input-field text-sm" placeholder="A-XXXXXXX"
                 value={triage.kraken_account}
                 onChange={e => setTriage(t => ({ ...t, kraken_account: e.target.value }))} />
             </div>
-
             <div>
               <label className="form-label text-xs">Confirmed issue</label>
               <div className="grid grid-cols-2 gap-1.5 mt-1">
@@ -379,14 +450,12 @@ export default function AdminPage({ session }) {
                 ))}
               </div>
             </div>
-
             <button onClick={saveTriage} disabled={triageSaving}
-              className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${triageSaved ? 'bg-green-100 text-green-700' : 'bg-brand-navy text-white active:opacity-90'}`}>
+              className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${triageSaved ? 'bg-green-100 text-green-700' : 'bg-brand-navy text-white'}`}>
               {triageSaving ? 'Saving…' : triageSaved ? '✓ Triage saved' : 'Save triage'}
             </button>
           </div>
 
-          {/* Message thread */}
           <div className="card p-0 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Messages</p>
@@ -399,34 +468,27 @@ export default function AdminPage({ session }) {
             </div>
           </div>
 
-          {/* Reply */}
           <div className="card space-y-2">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Reply to installer (English → translated to French)</p>
-            <textarea
-              className="input-field resize-none text-sm" rows={3}
+            <textarea className="input-field resize-none text-sm" rows={3}
               placeholder="Write your reply in English…"
-              value={replyText}
-              onChange={e => setReplyText(e.target.value)} />
+              value={replyText} onChange={e => setReplyText(e.target.value)} />
             <button onClick={sendReply} disabled={replySending || !replyText.trim()} className="btn-primary text-sm py-2.5">
               {replySending ? 'Sending…' : 'Send reply'}
             </button>
           </div>
 
-          {/* Internal note */}
           <div className="card space-y-2">
             <p className="text-xs font-semibold text-amber-500 uppercase tracking-wider">🔒 Internal note (not sent to installer)</p>
-            <textarea
-              className="input-field resize-none text-sm bg-amber-50 border-amber-200" rows={2}
+            <textarea className="input-field resize-none text-sm bg-amber-50 border-amber-200" rows={2}
               placeholder="Notes for the team only…"
-              value={noteText}
-              onChange={e => setNoteText(e.target.value)} />
+              value={noteText} onChange={e => setNoteText(e.target.value)} />
             <button onClick={sendNote} disabled={noteSending || !noteText.trim()}
               className="w-full py-2 rounded-xl text-sm font-semibold bg-amber-100 text-amber-800 disabled:opacity-40">
               {noteSending ? 'Saving…' : 'Save note'}
             </button>
           </div>
 
-          {/* Status */}
           <div className="card">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Status</p>
             <div className="flex gap-2 flex-wrap">
@@ -438,7 +500,6 @@ export default function AdminPage({ session }) {
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </div>
