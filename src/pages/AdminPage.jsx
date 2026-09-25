@@ -3,14 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const URGENCY = {
-  low:    { label: 'Low',     bg: 'bg-green-100',  text: 'text-green-700' },
-  medium: { label: 'Normal',  bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  high:   { label: 'Urgent',  bg: 'bg-red-100',    text: 'text-red-600' },
+  low:    { label: 'Low',    bg: 'bg-green-100',  text: 'text-green-700' },
+  medium: { label: 'Normal', bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  high:   { label: 'Urgent', bg: 'bg-red-100',    text: 'text-red-600' },
 }
 const STATUS = {
   open:        { label: 'Open',        bg: 'bg-blue-100',   text: 'text-blue-700' },
   in_progress: { label: 'In progress', bg: 'bg-yellow-100', text: 'text-yellow-700' },
-  resolved:    { label: 'Resolved',    bg: 'bg-green-100',  text: 'text-green-700' },
   closed:      { label: 'Closed',      bg: 'bg-gray-100',   text: 'text-gray-500' },
 }
 const CONFIRMED_ISSUES = [
@@ -28,7 +27,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 function Badge({ value, map }) {
-  const s = map[value] || { label: value, bg: 'bg-gray-100', text: 'text-gray-500' }
+  const s = map[value] || map['closed'] || { label: value, bg: 'bg-gray-100', text: 'text-gray-500' }
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>{s.label}</span>
 }
 
@@ -86,25 +85,36 @@ function MessageBubble({ msg }) {
 function NotificationBanner({ notifications, onView, onDismiss }) {
   if (notifications.length === 0) return null
   const n = notifications[0]
+  const isNewRequest = n.type === 'new_request'
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-safe-top" style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}>
-      <div className="mt-2 bg-brand-navy border border-brand-purple/40 rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center flex-shrink-0">
-          <svg className="w-4 h-4 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
+    <div className="fixed top-0 left-0 right-0 z-50 px-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)' }}>
+      <div className={`mt-2 rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 border ${isNewRequest ? 'bg-brand-pink/10 border-brand-pink/30' : 'bg-brand-navy border-brand-purple/40'}`}>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isNewRequest ? 'bg-brand-pink/20' : 'bg-brand-purple/30'}`}>
+          {isNewRequest ? (
+            <svg className="w-4 h-4 text-brand-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white text-xs font-bold">New message from installer</p>
-          <p className="text-white/60 text-xs truncate">{n.company} — {n.issue}</p>
+          <p className={`text-xs font-bold ${isNewRequest ? 'text-brand-navy' : 'text-white'}`}>
+            {isNewRequest ? 'New support request' : 'New reply from installer'}
+          </p>
+          <p className={`text-xs truncate ${isNewRequest ? 'text-brand-navy/60' : 'text-white/60'}`}>
+            {n.company} — {n.issue}
+          </p>
         </div>
-        <button onClick={() => onView(n)} className="flex-shrink-0 bg-brand-purple text-white text-xs font-semibold px-3 py-1.5 rounded-xl">
+        <button onClick={() => onView(n)} className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-xl ${isNewRequest ? 'bg-brand-navy text-white' : 'bg-brand-purple text-white'}`}>
           View
         </button>
-        <button onClick={() => onDismiss(n.id)} className="flex-shrink-0 text-white/40 text-lg leading-none">×</button>
+        <button onClick={() => onDismiss(n.id)} className={`flex-shrink-0 text-lg leading-none ${isNewRequest ? 'text-brand-navy/40' : 'text-white/40'}`}>×</button>
       </div>
       {notifications.length > 1 && (
-        <p className="text-center text-white/40 text-xs mt-1">+{notifications.length - 1} more</p>
+        <p className="text-center text-gray-400 text-xs mt-1">+{notifications.length - 1} more</p>
       )}
     </div>
   )
@@ -116,7 +126,6 @@ export default function AdminPage({ session }) {
   const navigate = useNavigate()
   const threadRef = useRef(null)
   const requestsRef = useRef([])
-  const selectedRef = useRef(null)
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
@@ -132,37 +141,32 @@ export default function AdminPage({ session }) {
   const [noteSending, setNoteSending] = useState(false)
   const [notifications, setNotifications] = useState([])
 
-  // Keep refs in sync so realtime callback can read latest state
   useEffect(() => { requestsRef.current = requests }, [requests])
-  useEffect(() => { selectedRef.current = selected }, [selected])
 
   useEffect(() => {
     loadRequests()
 
-    // Realtime: listen for new messages from installers
-    const channel = supabase
+    // New reply from installer
+    const msgChannel = supabase
       .channel('admin-messages')
       .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'fr_support_messages',
-        filter: 'sender=eq.user',
+        event: 'INSERT', schema: 'public', table: 'fr_support_messages', filter: 'sender=eq.user',
       }, (payload) => {
         const msg = payload.new
         if (msg.is_internal) return
-
-        const currentSelected = selectedRef.current
-        // If we're already viewing this ticket, append the message
-        if (currentSelected?.id === msg.request_id) {
-          setMessages(m => [...m, msg])
-          setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
-          return
-        }
-
-        // Otherwise show a notification banner
         const req = requestsRef.current.find(r => r.id === msg.request_id)
+        // Always append to thread if open
+        setMessages(m => {
+          if (m.length > 0 && m[0].request_id === msg.request_id) {
+            setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
+            return [...m, msg]
+          }
+          return m
+        })
+        // Always show banner
         setNotifications(n => [...n, {
           id: msg.id,
+          type: 'new_message',
           request_id: msg.request_id,
           company: req?.installation_company || req?.user_email || 'Installer',
           issue: req ? (ISSUE_LABELS[req.issue_type] || req.issue_type) : 'Support request',
@@ -171,7 +175,29 @@ export default function AdminPage({ session }) {
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // New support request submitted
+    const reqChannel = supabase
+      .channel('admin-new-requests')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'fr_support_requests',
+      }, (payload) => {
+        const req = payload.new
+        setRequests(rs => [req, ...rs])
+        setNotifications(n => [...n, {
+          id: `req-${req.id}`,
+          type: 'new_request',
+          request_id: req.id,
+          company: req.installation_company || req.user_email || 'Installer',
+          issue: ISSUE_LABELS[req.issue_type] || req.issue_type,
+          req,
+        }])
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(msgChannel)
+      supabase.removeChannel(reqChannel)
+    }
   }, [])
 
   async function loadRequests() {
@@ -270,8 +296,11 @@ export default function AdminPage({ session }) {
     setSelected(s => ({ ...s, status }))
   }
 
-  const TABS = [['open','Open'],['in_progress','Active'],['resolved','Resolved'],['closed','Closed'],['all','All']]
-  const filtered = filter === 'all' ? requests : requests.filter(r => r.status === filter)
+  const TABS = [['open','Open'],['in_progress','Active'],['closed','Closed'],['all','All']]
+  const filtered = filter === 'all' ? requests : requests.filter(r => {
+    if (filter === 'closed') return ['closed','resolved'].includes(r.status)
+    return r.status === filter
+  })
 
   // ── List view ────────────────────────────────────────────────────────────────
   if (!selected) {
@@ -291,7 +320,11 @@ export default function AdminPage({ session }) {
               <button key={val} onClick={() => setFilter(val)}
                 className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors ${filter === val ? 'bg-white text-brand-navy' : 'bg-white/20 text-white'}`}>
                 {label}
-                {val !== 'all' && <span className="ml-1 opacity-60">{requests.filter(r => r.status === val).length}</span>}
+                {val !== 'all' && (
+                  <span className="ml-1 opacity-60">
+                    {val === 'closed' ? requests.filter(r => ['closed','resolved'].includes(r.status)).length : requests.filter(r => r.status === val).length}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -312,7 +345,10 @@ export default function AdminPage({ session }) {
                       <Badge value={req.status} map={STATUS} />
                       {req.confirmed_issue && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-purple/10 text-brand-purple">{req.confirmed_issue}</span>}
                       {notifications.some(n => n.request_id === req.id) && (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-pink/10 text-brand-pink animate-pulse">New message</span>
+                        <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-pink/10 text-brand-pink">
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-pink animate-pulse" />
+                          {notifications.find(n => n.request_id === req.id)?.type === 'new_request' ? 'New' : 'New reply'}
+                        </span>
                       )}
                     </div>
                     <span className="text-xs text-gray-400 flex-shrink-0">{formatDate(req.created_at)}</span>
@@ -353,7 +389,7 @@ export default function AdminPage({ session }) {
               className={`flex-1 text-xs font-semibold py-1.5 rounded-xl transition-colors ${detailTab === t ? 'bg-white text-brand-navy' : 'bg-white/20 text-white'}`}>
               {l}
               {t === 'triage' && notifications.some(n => n.request_id === selected.id) && (
-                <span className="ml-1.5 w-2 h-2 rounded-full bg-brand-pink inline-block" />
+                <span className="ml-1.5 w-2 h-2 rounded-full bg-brand-pink inline-block animate-pulse" />
               )}
             </button>
           ))}
@@ -495,7 +531,9 @@ export default function AdminPage({ session }) {
               {Object.entries(STATUS).map(([val, s]) => (
                 <button key={val} type="button" onClick={() => updateStatus(val)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                    selected.status === val ? `${s.bg} ${s.text} border-current` : 'bg-white border-gray-200 text-gray-500'
+                    selected.status === val || (val === 'closed' && selected.status === 'resolved')
+                      ? `${s.bg} ${s.text} border-current`
+                      : 'bg-white border-gray-200 text-gray-500'
                   }`}>{s.label}</button>
               ))}
             </div>
