@@ -1,68 +1,182 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-// ── Unit specs ────────────────────────────────────────────────────────────────
+// ── Unit specs (source: Manuel d'installation FRV1, section 7) ──────────────────
 
 const UNIT_SPECS = {
   headers: ['', 'Cosy 6', 'Cosy 9', 'Cosy 12'],
   rows: [
-    ['Puissance calorifique nominale', '6 kW', '9 kW', '12 kW'],
-    ['Hauteur de l\'unité extérieure', '680 mm', '800 mm', '800 mm'],
-    ['Largeur de l\'unité extérieure', '900 mm', '900 mm', '900 mm'],
-    ['Profondeur de l\'unité extérieure', '392 mm', '415 mm', '415 mm'],
-    ['Poids de l\'unité extérieure', '55 kg', '68 kg', '73 kg'],
-    ['Hauteur de l\'unité intérieure', '750 mm', '750 mm', '750 mm'],
-    ['Largeur de l\'unité intérieure', '500 mm', '500 mm', '500 mm'],
-    ['Profondeur de l\'unité intérieure', '250 mm', '250 mm', '250 mm'],
-    ['Poids de l\'unité intérieure', '26 kg', '26 kg', '26 kg'],
-    ['Débit max (l/min)', '28 l/min', '28 l/min', '28 l/min'],
-    ['Pression max circuit', '3 bar', '3 bar', '3 bar'],
-    ['Diamètre raccords plomberie', '1" (28 mm)', '1" (28 mm)', '1" (28 mm)'],
-    ['Alimentation électrique unité ext.', '230V / 16A', '230V / 20A', '230V / 20A'],
-    ['Alimentation électrique unité int.', '230V / 6A', '230V / 6A', '230V / 6A'],
-    ['Frigorigène', 'R-32', 'R-32', 'R-32'],
-    ['Charge frigorigène', '1,15 kg', '1,45 kg', '1,45 kg'],
-    ['Température extérieure min', '-20°C', '-20°C', '-20°C'],
-    ['COP (A7/W35)', '3,80', '3,90', '3,77'],
-    ['SCOP', '4,20', '4,30', '4,10'],
-    ['Niveau sonore', '47 dBA', '51 dBA', '51 dBA'],
+    ['Puissance calorifique nominale (A7/W35)', '6 kW', '10,0 kW', '12,0 kW'],
+    ['Puissance de conception Turbo (A-5/W65)', '5,1 kW', '8,2 kW', '9,98 kW'],
+    ['Puissance de conception EcoMax (A-5/W50)', '5,6 kW', '8,7 kW', '11,25 kW'],
+    ['Puissance minimum (A7/W35)', '1,9 kW', '2,7 kW', '2,7 kW'],
+    ['Puissance minimum (A7/W55)', '1,6 kW', '2,4 kW', '2,5 kW'],
+    ['Puissance minimum (A-7/W35)', '1,3 kW', '2,1 kW', '2,1 kW'],
+    ['Puissance minimum (A-7/W55)', '1,2 kW', '1,7 kW', '1,8 kW'],
+    ['COP (A7/W35) — EN 14511', '4,2 (à 5,63 kW)', '4,65 (à 8,1 kW)', '4,89 (à 9,1 kW)'],
+    ['COP (A7/W55) — EN 14511', '—', '2,96 (à 8,0 kW)', '3,27 (à 9,1 kW)'],
+    ['COP (A7/W65) — EN 14511', '2,3 (à 5,23 kW)', '2,42 (à 7,9 kW)', '2,71 (à 9,1 kW)'],
+    ['Longueur', '855 mm', '855 mm', '855 mm'],
+    ['Hauteur', '1125 mm', '1375 mm', '1375 mm'],
+    ['Profondeur', '595 mm', '595 mm', '595 mm'],
+    ['Poids', '100 kg', '125 kg', '125 kg'],
+    ['Volume', '0,44 m³', '0,56 m³', '0,56 m³'],
+    ['Puissance acoustique (chauffage, A7/W55)', '58 dB(A)', '56 dB(A)', '61 dB(A)'],
+    ['Puissance acoustique (chauffage, A7/W65)', '59 dB(A)', '57 dB(A)', '61 dB(A)'],
+    ['Température de départ maximum', '70 °C', '70 °C', '70 °C'],
+    ['Débit volumétrique maximum', '25 l/min', '28,9 l/min', '34,5 l/min'],
+    ['Débit volumétrique minimum', '7 l/min', '7 l/min', '7 l/min'],
+    ['Volume de système minimum', '90 L', '135 L', '135 L'],
+    ['Longueur efficace max. de tuyau primaire', '20 m', '25 m', '25 m'],
+    ['Raccords de tuyauterie', 'G1" à joint plat', 'G1" à joint plat', 'G1" à joint plat'],
+    ['Type de réfrigérant', 'R290 (propane)', 'R290 (propane)', 'R290 (propane)'],
+    ['Charge de réfrigérant', '0,65 kg', '0,88 kg', '1,30 kg'],
+    ['Alimentation électrique', '230 V monophasé 50 Hz', '230 V monophasé 50 Hz', '230 V monophasé 50 Hz'],
+    ['Courant maximum nominal', '16 A', '20 A', '32 A'],
+    ['Disjoncteur', 'Courbe B', 'Courbe B', 'Courbe B'],
+    ['Interrupteur différentiel (DDR)', 'Type B', 'Type B', 'Type B'],
+    ['Longueur max. du câble Modbus', '50 m', '50 m', '50 m'],
+    ['Indice de protection', 'IPX5', 'IPX5', 'IPX5'],
+    ['Technologie de démarrage', 'Onduleur', 'Onduleur', 'Onduleur'],
+    ['Type de compresseur', 'Scroll', 'Scroll', 'Scroll'],
+    ["Huile du compresseur", 'HATCOL 4467', 'HATCOL 4467', 'PAG-68 (Zerol RFL 68-EP)'],
+    ['Puissance max. du ventilateur', '140 W', '170 W', '275 W'],
+    ['Vitesse max. du ventilateur', '940 min⁻¹', '940 min⁻¹', '1400 min⁻¹'],
   ]
 }
 
-// ── Clearances ────────────────────────────────────────────────────────────────
+// ── Clearances (source: Manuel d'installation FRV1, section 6) ───────────────
+
+const CLEARANCES_NOTES = [
+  "Les arbustes et haies denses qui limitent le flux d'air comptent comme des murs. Les grillages, treillis et clôtures ajourées peuvent être ignorés.",
+  "Un seul mur latéral est autorisé en plus du mur arrière. Si un côté a un mur/clôture >300 mm à moins de 1 m, l'autre côté ne doit en avoir aucun à moins de 1 m.",
+  "Sites exposés au vent : placer l'arrière de l'unité face à un bloc massif (mur ou clôture) à plus de 250 mm, au moins aussi haut que le serpentin de l'évaporateur et de plus de 1200 mm de large.",
+  "Les compteurs et canalisations de gaz sont autorisés dans toutes les zones. Les briques alvéolées et évents de drainage sont autorisés partout, même juste derrière l'unité.",
+  "Une unité placée à une distance de sécurité autre que le minimum augmente le risque de chocs accidentels avec le temps.",
+]
 
 const CLEARANCES = {
   'Cosy 6': {
     operational: [
-      { label: 'Avant (côté soufflage)', value: '500 mm' },
-      { label: 'Arrière', value: '100 mm' },
-      { label: 'Côtés (gauche et droit)', value: '100 mm' },
-      { label: 'Dessus', value: '200 mm' },
-      { label: 'Dessous', value: '100 mm' },
+      { label: "Avant (du sol au fond de l'ouverture du ventilateur)", value: '500 mm' },
+      { label: 'Côtés — aucun mur/clôture >300 mm à moins de', value: '500 mm' },
+      { label: 'Arrière — distance minimale obligatoire', value: '250 mm' },
+      { label: 'Surplomb (depuis la base)', value: '1500 mm (2000 mm si un côté est limité par un mur à moins de 1 m)' },
     ],
     safety: [
-      { label: 'Depuis une ouverture de fenêtre ou ventilation', value: '500 mm' },
-      { label: "Depuis le compteur d'électricité ou de gaz", value: '500 mm' },
-      { label: 'Depuis la limite de propriété', value: '300 mm' },
-      { label: 'Depuis un accès pompier', value: 'Conserver accès libre' },
+      { label: "Zone sans sources d'allumage (interrupteurs, connexions, toute source d'allumage)", value: '300 mm latéral / 950 mm vertical' },
+      { label: 'Portes et fenêtres ouvrantes (aucune autorisée dans la zone)', value: '300 mm latéral / 950 mm vertical' },
+      { label: 'Fenêtres scellées en permanence, ou entièrement au-dessus de la zone', value: 'Autorisées' },
     ],
   },
   'Cosy 9 & 12': {
     operational: [
-      { label: 'Avant (côté soufflage)', value: '700 mm' },
-      { label: 'Arrière', value: '100 mm' },
-      { label: 'Côtés (gauche et droit)', value: '100 mm' },
-      { label: 'Dessus', value: '300 mm' },
-      { label: 'Dessous', value: '100 mm' },
+      { label: "Avant — retrait de la porte (du sol au fond de l'ouverture du ventilateur)", value: '500 mm' },
+      { label: "Avant — au-dessus du fond de l'ouverture du ventilateur (évite le recyclage de l'air)", value: '750 mm' },
+      { label: 'Côtés — aucun mur/clôture >300 mm à moins de', value: '500 mm' },
+      { label: 'Arrière — distance minimale obligatoire', value: '250 à 500 mm' },
+      { label: 'Surplomb (depuis la base)', value: '1500 mm (2000 mm si un côté est limité par un mur à moins de 1 m)' },
     ],
     safety: [
-      { label: 'Depuis une ouverture de fenêtre ou ventilation', value: '500 mm' },
-      { label: "Depuis le compteur d'électricité ou de gaz", value: '500 mm' },
-      { label: 'Depuis la limite de propriété', value: '300 mm' },
-      { label: 'Depuis un accès pompier', value: 'Conserver accès libre' },
+      { label: "Zone sans sources d'allumage (interrupteurs, connexions, toute source d'allumage)", value: '300 mm latéral / 1200 mm vertical' },
+      { label: 'Portes et fenêtres ouvrantes (aucune autorisée dans la zone)', value: '300 mm latéral / 1200 mm vertical' },
+      { label: 'Fenêtres scellées en permanence, ou entièrement au-dessus de la zone', value: 'Autorisées' },
     ],
   },
 }
+
+// ── Sécurité R290 (source: Manuel d'installation FRV1, sections 1.3 à 1.7 et 14.5) ──
+
+const R290_SAFETY = [
+  {
+    title: 'À propos du R290',
+    tone: 'red',
+    items: [
+      "Le R290 (propane) est un réfrigérant inflammable de catégorie de sécurité A3.",
+      "Incolore et inodore : aucun odorant n'est ajouté pour faciliter la détection d'une fuite.",
+      "Plus lourd que l'air : il s'accumule dans les points bas (tubes, purges).",
+      "Une fuite en présence d'une source d'allumage crée un risque d'incendie ou d'explosion.",
+    ],
+  },
+  {
+    title: 'Avant toute intervention',
+    tone: 'red',
+    items: [
+      "Ne percez ni ne brûlez aucune pièce de l'unité.",
+      "Ne fumez pas autour de l'unité, que ce soit pendant le travail ou le transport. Pas de flamme nue à proximité.",
+      "Vérifiez l'absence de toute source d'allumage près du produit.",
+      "Ne stockez jamais l'unité dans un espace confiné avec des sources d'allumage en fonctionnement continu (flammes nues, appareils à gaz en service, chauffages électriques).",
+      "Stockez l'unité à l'abri des dommages mécaniques pouvant créer une fuite. Stockée à l'intérieur, elle doit se trouver dans une pièce de surface suffisante pour sa charge totale de réfrigérant.",
+      "Utilisez un détecteur de gaz calibré pour le R290, réglé sur 25 % maximum de la limite inférieure d'inflammabilité (LII).",
+    ],
+  },
+  {
+    title: 'Qualifications requises',
+    tone: 'amber',
+    items: [
+      "Seul un personnel connaissant les propriétés et les risques du R290 doit ouvrir l'unité.",
+      "Travailler sur le circuit de réfrigérant exige une formation spécifique en plus des procédures de réparation standard, car le réfrigérant est inflammable.",
+      "Toute personne qui intervient sur le circuit de réfrigérant ou y accède doit détenir un certificat valide d'un organisme d'évaluation agréé, attestant sa compétence pour la manipulation sûre des réfrigérants.",
+      "Les interventions qui nécessitent l'aide d'autres personnes compétentes se font sous la supervision de la personne compétente pour les réfrigérants de catégorie A3.",
+      "L'entretien suit uniquement les recommandations d'Octopus Heating, le fabricant d'origine.",
+      "Respectez la réglementation de votre juridiction relative au R290, en plus de ce manuel.",
+    ],
+  },
+  {
+    title: "Implantation de l'unité",
+    tone: 'amber',
+    items: [
+      "Installez l'unité à l'écart de toute source de gaz inflammables.",
+      "Arrimez l'unité pendant toutes les phases de l'installation pour éviter tout basculement.",
+      "Respectez les dégagements opérationnels et de sécurité (voir « Dégagements »), idéalement dès l'étude d'implantation.",
+      "L'unité produit de l'eau (formation et fonte de la glace) : prévoyez un drainage adapté.",
+    ],
+  },
+  {
+    title: 'Fuite suspectée',
+    tone: 'red',
+    items: [
+      "Contactez immédiatement le support technique d'Octopus Energy et éloignez de l'unité toute électronique et toute source d'allumage.",
+      "Un sifflement provenant de l'unité peut indiquer une fuite. L'unité peut aussi forcer davantage, puis s'arrêter.",
+      "N'utilisez jamais une source d'allumage pour détecter une fuite : ni lampe aux halogénures, ni flamme nue.",
+      "Utilisez un détecteur électronique adapté au R290, calibré dans une zone sans réfrigérant et réglé sur 25 % maximum de la LII. Vérifiez qu'il n'est pas lui-même une source d'allumage.",
+      "Évitez les détergents contenant du chlore : ils peuvent corroder les tubes en cuivre.",
+      "Éteignez ou retirez toute flamme nue.",
+      "Ne tentez jamais de réparer une fuite suspectée, un tube de réfrigérant ou un composant.",
+    ],
+  },
+  {
+    title: 'Sécurité générale',
+    tone: 'amber',
+    items: [
+      "Portez des gants de protection pour déballer et déplacer l'unité : les ailettes de l'évaporateur peuvent blesser.",
+      "Ne touchez pas la tuyauterie en fonctionnement : tubes et surfaces internes peuvent dépasser 100 °C.",
+      "Les composants du caisson fermé peuvent causer de graves brûlures même après l'arrêt de l'unité.",
+    ],
+  },
+  {
+    title: 'Premiers secours',
+    tone: 'info',
+    items: [
+      "Asphyxie (concentrations élevées) : la victime peut ne pas s'en rendre compte. Déplacez-la dans une zone bien ventilée, allongez-la et appelez immédiatement un médecin.",
+      "Inhalation : allez à l'air frais. Si la respiration est difficile, administrez de l'oxygène. Appelez un médecin si l'irritation persiste.",
+      "Peau : laissez s'évaporer, rincez abondamment à l'eau et au savon, retirez les vêtements contaminés. Médecin si les symptômes persistent.",
+      "Yeux : retirez les lentilles, maintenez les paupières ouvertes et rincez à l'eau pendant 15 minutes. Médecin si l'irritation persiste.",
+      "Ingestion : rincez la bouche à l'eau. Ne faites pas vomir. Ne donnez jamais rien par la bouche à une personne inconsciente.",
+    ],
+  },
+  {
+    title: 'Incendie et fuite accidentelle',
+    tone: 'info',
+    items: [
+      "Moyens d'extinction adaptés : poudre, eau pulvérisée ou brumisée, mousse AFFF. Refroidissez les contenants exposés au feu à l'eau pulvérisée.",
+      "Moyens inadaptés : jet d'eau à haute pression, dioxyde de carbone.",
+      "L'échauffement produit des fumées dangereuses. Portez un appareil respiratoire autonome et des vêtements de protection.",
+      "Fuite accidentelle : assurez une ventilation suffisante, évacuez vers une zone sûre, tenez le public à l'écart et éliminez toutes les sources d'allumage.",
+      "Ne pas rejeter dans l'environnement. Abattez les gaz et vapeurs avec un jet d'eau pulvérisée.",
+    ],
+  },
+]
 
 // ── Cosy Hub LEDs ─────────────────────────────────────────────────────────────
 
@@ -191,8 +305,9 @@ const PROCEDURES = [
 // ── Shared ────────────────────────────────────────────────────────────────────
 
 const SECTIONS = [
-  { id: 'specs', label: 'Caractéristiques techniques', subtitle: 'Dimensions, poids, électrique', icon: '📐' },
-  { id: 'clearances', label: 'Dégagements', subtitle: 'Espacements requis autour de l\'unité', icon: '📏' },
+  { id: 'r290', label: 'Sécurité R290', subtitle: 'Réfrigérant inflammable, qualifications, urgences', icon: '⚠️' },
+  { id: 'specs', label: 'Caractéristiques techniques', subtitle: 'Dimensions, poids, électrique, réfrigérant', icon: '📐' },
+  { id: 'clearances', label: 'Dégagements', subtitle: 'Espacements et zones de sécurité autour de l\'unité', icon: '📏' },
   { id: 'hub', label: 'Cosy Hub', subtitle: 'Voyants LED & fonctionnement', icon: '💡' },
   { id: 'commissioning', label: 'Mise en service', subtitle: 'Zones, températures, pods', icon: '⚙️' },
   { id: 'procedures', label: 'Procédures', subtitle: 'Purge, réinitialisation, maintenance', icon: '🛠️' },
@@ -252,6 +367,37 @@ export default function InfoPage() {
           </div>
         )}
 
+        {/* R290 safety */}
+        {section === 'r290' && (
+          <div className="space-y-3">
+            <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+              <p className="text-xs text-red-700 font-semibold">
+                Avertissement : danger d'incendie ou d'explosion du fait de gaz inflammables. Les pompes à chaleur Cosy contiennent du R290 (propane).
+              </p>
+            </div>
+            {R290_SAFETY.map(block => {
+              const tone = {
+                red:   { box: 'bg-red-50 border-red-200', title: 'text-red-700', dot: 'bg-red-400' },
+                amber: { box: 'bg-amber-50 border-amber-200', title: 'text-amber-800', dot: 'bg-amber-400' },
+                info:  { box: 'bg-white border-gray-200', title: 'text-brand-navy', dot: 'bg-brand-purple' },
+              }[block.tone]
+              return (
+                <div key={block.title} className={`rounded-2xl border px-4 py-3 ${tone.box}`}>
+                  <p className={`text-sm font-bold mb-2 ${tone.title}`}>{block.title}</p>
+                  <ul className="space-y-2">
+                    {block.items.map((it, i) => (
+                      <li key={i} className="flex gap-2.5">
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5 ${tone.dot}`} />
+                        <span className="text-sm text-gray-700 leading-snug">{it}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {/* Unit specs */}
         {section === 'specs' && (
           <div>
@@ -287,7 +433,7 @@ export default function InfoPage() {
                 <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-2xl flex-shrink-0">📏</div>
                 <div className="flex-1 text-left">
                   <p className="font-semibold text-brand-navy">{model}</p>
-                  <p className="text-sm text-gray-500">Dégagements opérationnels & sécurité</p>
+                  <p className="text-sm text-gray-500">Dégagements opérationnels & zones de sécurité R290</p>
                 </div>
                 <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -306,19 +452,24 @@ export default function InfoPage() {
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Dégagements opérationnels</p>
             <div className="card p-0 overflow-hidden mb-4">
               {CLEARANCES[selected].operational.map((r, i) => (
-                <div key={i} className={`flex items-center px-4 py-3 gap-4 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                <div key={i} className={`flex items-start px-4 py-3 gap-4 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                   <span className="text-xs text-gray-600 flex-1">{r.label}</span>
-                  <span className="text-xs font-bold text-brand-purple">{r.value}</span>
+                  <span className="text-xs font-bold text-brand-purple text-right max-w-[45%]">{r.value}</span>
                 </div>
               ))}
             </div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Distances de sécurité</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Zones de sécurité R290</p>
             <div className="card p-0 overflow-hidden">
               {CLEARANCES[selected].safety.map((r, i) => (
-                <div key={i} className={`flex items-center px-4 py-3 gap-4 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                <div key={i} className={`flex items-start px-4 py-3 gap-4 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                   <span className="text-xs text-gray-600 flex-1">{r.label}</span>
-                  <span className="text-xs font-bold text-brand-pink">{r.value}</span>
+                  <span className="text-xs font-bold text-brand-pink text-right max-w-[45%]">{r.value}</span>
                 </div>
+              ))}
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mt-4 space-y-2">
+              {CLEARANCES_NOTES.map((n, i) => (
+                <p key={i} className="text-xs text-amber-800 leading-snug">{n}</p>
               ))}
             </div>
           </div>
