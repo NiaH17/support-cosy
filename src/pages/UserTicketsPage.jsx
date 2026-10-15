@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { markTicketRead } from '../lib/notifications'
 import { supabase } from '../lib/supabase'
 
 const ISSUE_LABELS = {
@@ -22,39 +23,12 @@ function Badge({ value, map }) {
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>{s.label}</span>
 }
 
-// ── Notification banner ───────────────────────────────────────────────────────
-
-function NotificationBanner({ notifications, onView, onDismiss }) {
-  if (notifications.length === 0) return null
-  const n = notifications[0]
-  return (
-    <div className="fixed top-0 left-0 right-0 z-50 px-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 8px)' }}>
-      <div className="mt-2 bg-brand-navy border border-brand-purple/40 rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-brand-cyan/20 flex items-center justify-center flex-shrink-0">
-          <svg className="w-4 h-4 text-brand-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-white text-xs font-bold">Octopus Energy a répondu</p>
-          <p className="text-white/60 text-xs truncate">{n.issue}</p>
-        </div>
-        <button onClick={() => onView(n)} className="flex-shrink-0 bg-brand-purple text-white text-xs font-semibold px-3 py-1.5 rounded-xl">
-          Voir
-        </button>
-        <button onClick={() => onDismiss(n.id)} className="flex-shrink-0 text-white/40 text-lg leading-none">×</button>
-      </div>
-      {notifications.length > 1 && (
-        <p className="text-center text-white/40 text-xs mt-1">+{notifications.length - 1} autre(s)</p>
-      )}
-    </div>
-  )
-}
-
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function UserTicketsPage({ session }) {
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const selectedIdRef = useRef(null)
   const threadRef = useRef(null)
   const requestsRef = useRef([])
   const [requests, setRequests] = useState([])
@@ -68,6 +42,13 @@ export default function UserTicketsPage({ session }) {
   const [notifications, setNotifications] = useState([])
 
   useEffect(() => { requestsRef.current = requests }, [requests])
+  useEffect(() => { selectedIdRef.current = selected?.id || null }, [selected])
+  useEffect(() => {
+    const t = params.get('ticket')
+    if (!t || !requests.length) return
+    const req = requests.find(r => r.id === t)
+    if (req) { selectTicket(req); setParams({}, { replace: true }) }
+  }, [params, requests])
 
   useEffect(() => {
     loadRequests()
@@ -81,6 +62,7 @@ export default function UserTicketsPage({ session }) {
         if (msg.is_internal) return
         const req = requestsRef.current.find(r => r.id === msg.request_id)
         if (!req) return // not the user's ticket
+        if (selectedIdRef.current === msg.request_id) markTicketRead(msg.request_id)
 
         // Always append to thread if open
         setMessages(m => {
@@ -115,6 +97,7 @@ export default function UserTicketsPage({ session }) {
 
   async function selectTicket(req) {
     setSelected(req)
+    markTicketRead(req.id)
     setReplyText('')
     const { data } = await supabase
       .from('fr_support_messages')
@@ -175,7 +158,6 @@ export default function UserTicketsPage({ session }) {
   if (!selected) {
     return (
       <div className="min-h-screen bg-gray-50 safe-top safe-bottom">
-        <NotificationBanner notifications={notifications} onView={viewNotification} onDismiss={dismissNotification} />
         <div className="bg-brand-navy px-6 pt-6 pb-4 sticky top-0 z-10">
           <div className="flex items-center gap-3 mb-4">
             <button onClick={() => navigate('/')} className="text-white/70">
@@ -236,7 +218,6 @@ export default function UserTicketsPage({ session }) {
   const isClosed = ['closed','resolved'].includes(selected.status)
   return (
     <div className="min-h-screen bg-gray-50 safe-top safe-bottom flex flex-col">
-      <NotificationBanner notifications={notifications} onView={viewNotification} onDismiss={dismissNotification} />
       <div className="bg-brand-navy px-6 pt-6 pb-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <button onClick={() => setSelected(null)} className="text-white/70">

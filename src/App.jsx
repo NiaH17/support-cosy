@@ -8,6 +8,7 @@ import InfoPage from './pages/InfoPage'
 import SupportPage from './pages/SupportPage'
 import AdminPage from './pages/AdminPage'
 import UserTicketsPage from './pages/UserTicketsPage'
+import GlobalNotifier from './components/GlobalNotifier'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -46,6 +47,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      {session && <GlobalNotifier session={session} />}
       <Routes>
         <Route path="/connexion" element={session ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route path="/" element={
