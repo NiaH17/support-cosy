@@ -22,7 +22,7 @@ function ProtectedRoute({ session, children }) {
 
 function AdminRoute({ session, children }) {
   if (!session) return <Navigate to="/connexion" replace />
-  if (session.user?.user_metadata?.role !== 'admin') return <Navigate to="/" replace />
+  if (session.user?.app_metadata?.role !== 'admin') return <Navigate to="/" replace />
   return children
 }
 

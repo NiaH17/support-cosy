@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 
 export default function HubPage({ session }) {
   const navigate = useNavigate()
-  const role = session?.user?.user_metadata?.role
+  const role = session?.user?.app_metadata?.role
   const name = session?.user?.user_metadata?.full_name || session?.user?.email || ''
 
   async function handleSignOut() {

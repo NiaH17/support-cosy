@@ -254,7 +254,7 @@ export default function AdminPage({ session }) {
     try {
       const res = await fetch('/api/translate-message', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
         body: JSON.stringify({ request_id: selected.id, message: replyText.trim(), sender: 'admin', is_internal: false }),
       })
       if (res.ok) {
@@ -278,7 +278,7 @@ export default function AdminPage({ session }) {
     try {
       const res = await fetch('/api/translate-message', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
         body: JSON.stringify({ request_id: selected.id, message: noteText.trim(), sender: 'admin', is_internal: true }),
       })
       if (res.ok) {

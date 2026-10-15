@@ -140,7 +140,7 @@ export default function UserTicketsPage({ session }) {
     try {
       const res = await fetch('/api/translate-message', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
         body: JSON.stringify({ request_id: selected.id, message: replyText.trim(), sender: 'user', is_internal: false }),
       })
       if (res.ok) {
