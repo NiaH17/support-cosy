@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function LoginPage() {
+export default function LoginPage({ denied = false }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(denied ? "Ce compte n'a pas accès à Support Cosy. Contactez Octopus Energy." : '')
+
+  useEffect(() => {
+    if (denied) setError("Ce compte n'a pas accès à Support Cosy. Contactez Octopus Energy.")
+  }, [denied])
 
   async function handleLogin(e) {
     e.preventDefault()

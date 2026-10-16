@@ -14,5 +14,7 @@ export async function getCaller(req) {
   if (!token) return null
   const { data, error } = await supabase.auth.getUser(token)
   if (error || !data?.user) return null
+  // Account must be allowed into this app (app_metadata.apps is server-only)
+  if (!data.user.app_metadata?.apps?.includes('support_cosy')) return null
   return { user: data.user, isAdmin: data.user.app_metadata?.role === 'admin' }
 }

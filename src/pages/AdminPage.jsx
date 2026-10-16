@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { markTicketRead } from '../lib/notifications'
 import ReportingTab from '../components/admin/ReportingTab'
 import InstallationsTab from '../components/admin/InstallationsTab'
+import UsersTab from '../components/admin/UsersTab'
 import { supabase } from '../lib/supabase'
 
 const URGENCY = {
@@ -300,7 +301,7 @@ export default function AdminPage({ session }) {
             <span className="ml-auto text-white/40 text-sm">{requests.length} requests</span>
           </div>
           <div className="flex gap-1 p-1 rounded-xl bg-white/10 mb-3">
-            {[['tickets', 'Tickets'], ['installs', 'Installations'], ['reports', 'Reporting']].map(([val, label]) => (
+            {[['tickets', 'Tickets'], ['installs', 'Installs'], ['users', 'Users'], ['reports', 'Reports']].map(([val, label]) => (
               <button key={val} onClick={() => setView(val)}
                 className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-colors ${view === val ? 'bg-white text-brand-navy' : 'text-white/70'}`}>
                 {label}
@@ -326,6 +327,8 @@ export default function AdminPage({ session }) {
             <ReportingTab requests={requests} />
           ) : view === 'installs' ? (
             <InstallationsTab />
+          ) : view === 'users' ? (
+            <UsersTab currentUserId={session.user.id} />
           ) : loading ? (
             <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" /></div>
           ) : filtered.length === 0 ? (

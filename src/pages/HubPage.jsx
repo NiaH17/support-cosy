@@ -66,7 +66,9 @@ export default function HubPage({ session }) {
     <div className="min-h-screen bg-gray-50 safe-top safe-bottom">
       <div className="bg-gradient-to-br from-brand-purple to-brand-pink px-6 pt-6 pb-8">
         <div className="flex items-center justify-between mb-5">
-          <div />
+          <button onClick={() => navigate('/mot-de-passe')} className="text-white/50 text-xs border border-white/20 rounded-xl px-3 py-1.5">
+            Mot de passe
+          </button>
           <button onClick={handleSignOut} className="text-white/50 text-xs border border-white/20 rounded-xl px-3 py-1.5">
             Déconnexion
           </button>

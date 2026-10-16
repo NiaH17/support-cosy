@@ -10,6 +10,7 @@ import AdminPage from './pages/AdminPage'
 import UserTicketsPage from './pages/UserTicketsPage'
 import InstallRegisterPage from './pages/InstallRegisterPage'
 import MyInstallsPage from './pages/MyInstallsPage'
+import ChangePasswordPage from './pages/ChangePasswordPage'
 import GlobalNotifier from './components/GlobalNotifier'
 
 function ScrollToTop() {
@@ -29,12 +30,28 @@ function AdminRoute({ session, children }) {
   return children
 }
 
+const hasAccess = s => !!s?.user?.app_metadata?.apps?.includes('support_cosy')
+
 export default function App() {
   const [session, setSession] = useState(undefined)
+  const [denied, setDenied] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session))
+    // Accounts without Support Cosy access are signed straight back out
+    async function apply(next) {
+      if (next && !hasAccess(next)) {
+        // The token may predate the access list: refresh once to pick up the latest before refusing
+        const { data } = await supabase.auth.refreshSession()
+        if (data?.session && hasAccess(data.session)) { setSession(data.session); return }
+        setDenied(true)
+        supabase.auth.signOut()
+        setSession(null)
+      } else {
+        setSession(next)
+      }
+    }
+    supabase.auth.getSession().then(({ data: { session } }) => apply(session))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => apply(session))
     return () => subscription.unsubscribe()
   }, [])
 
@@ -51,7 +68,7 @@ export default function App() {
       <ScrollToTop />
       {session && <GlobalNotifier session={session} />}
       <Routes>
-        <Route path="/connexion" element={session ? <Navigate to="/" replace /> : <LoginPage />} />
+        <Route path="/connexion" element={session ? <Navigate to="/" replace /> : <LoginPage denied={denied} />} />
         <Route path="/" element={
           <ProtectedRoute session={session}><HubPage session={session} /></ProtectedRoute>
         } />
@@ -66,6 +83,9 @@ export default function App() {
         } />
         <Route path="/mes-demandes" element={
           <ProtectedRoute session={session}><UserTicketsPage session={session} /></ProtectedRoute>
+        } />
+        <Route path="/mot-de-passe" element={
+          <ProtectedRoute session={session}><ChangePasswordPage /></ProtectedRoute>
         } />
         <Route path="/installations/nouvelle" element={
           <ProtectedRoute session={session}><InstallRegisterPage session={session} /></ProtectedRoute>
