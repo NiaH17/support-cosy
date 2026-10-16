@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { markTicketRead } from '../lib/notifications'
+import ReportingTab from '../components/admin/ReportingTab'
+import InstallationsTab from '../components/admin/InstallationsTab'
 import { supabase } from '../lib/supabase'
 
 const URGENCY = {
@@ -94,6 +96,7 @@ export default function AdminPage({ session }) {
   const [selected, setSelected] = useState(null)
   const [messages, setMessages] = useState([])
   const [filter, setFilter] = useState('open')
+  const [view, setView] = useState('tickets')
   const [detailTab, setDetailTab] = useState('details')
   const [triage, setTriage] = useState({ part_needed: null, part_details: '', kraken_account: '', confirmed_issue: '' })
   const [triageSaving, setTriageSaving] = useState(false)
@@ -233,8 +236,9 @@ export default function AdminPage({ session }) {
         const { message } = await res.json()
         setMessages(m => [...m, message])
         setReplyText('')
-        setRequests(rs => rs.map(r => r.id === selected.id ? { ...r, status: r.status === 'open' ? 'in_progress' : r.status } : r))
-        setSelected(s => ({ ...s, status: s.status === 'open' ? 'in_progress' : s.status }))
+        const me = { assigned_admin_id: session.user.id, assigned_admin_name: session.user.user_metadata?.full_name || session.user.email }
+        setRequests(rs => rs.map(r => r.id === selected.id ? { ...r, status: r.status === 'open' ? 'in_progress' : r.status, ...(r.assigned_admin_id ? {} : me) } : r))
+        setSelected(s => ({ ...s, status: s.status === 'open' ? 'in_progress' : s.status, ...(s.assigned_admin_id ? {} : me) }))
         setTimeout(() => threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' }), 100)
       } else {
         const err = await res.json()
@@ -262,6 +266,15 @@ export default function AdminPage({ session }) {
     setNoteSending(false)
   }
 
+  async function takeOver() {
+    const name = session.user.user_metadata?.full_name || session.user.email
+    const patch = { assigned_admin_id: session.user.id, assigned_admin_name: name }
+    const { error } = await supabase.from('fr_support_requests').update(patch).eq('id', selected.id)
+    if (error) { alert('Could not assign: ' + error.message); return }
+    setRequests(rs => rs.map(r => r.id === selected.id ? { ...r, ...patch } : r))
+    setSelected(sel => ({ ...sel, ...patch }))
+  }
+
   async function updateStatus(status) {
     await supabase.from('fr_support_requests').update({ status }).eq('id', selected.id)
     setRequests(rs => rs.map(r => r.id === selected.id ? { ...r, status } : r))
@@ -284,9 +297,17 @@ export default function AdminPage({ session }) {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </button>
             <h1 className="text-white font-bold text-lg">Support requests</h1>
-            <span className="ml-auto text-white/40 text-sm">{requests.length} total</span>
+            <span className="ml-auto text-white/40 text-sm">{requests.length} requests</span>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-1 p-1 rounded-xl bg-white/10 mb-3">
+            {[['tickets', 'Tickets'], ['installs', 'Installations'], ['reports', 'Reporting']].map(([val, label]) => (
+              <button key={val} onClick={() => setView(val)}
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-colors ${view === val ? 'bg-white text-brand-navy' : 'text-white/70'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {view === 'tickets' && <div className="flex gap-2 overflow-x-auto pb-1">
             {TABS.map(([val, label]) => (
               <button key={val} onClick={() => setFilter(val)}
                 className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors ${filter === val ? 'bg-white text-brand-navy' : 'bg-white/20 text-white'}`}>
@@ -298,10 +319,14 @@ export default function AdminPage({ session }) {
                 )}
               </button>
             ))}
-          </div>
+          </div>}
         </div>
         <div className="px-6 py-4 pb-12">
-          {loading ? (
+          {view === 'reports' ? (
+            <ReportingTab requests={requests} />
+          ) : view === 'installs' ? (
+            <InstallationsTab />
+          ) : loading ? (
             <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" /></div>
           ) : filtered.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-12">No requests</p>
@@ -326,6 +351,9 @@ export default function AdminPage({ session }) {
                   </div>
                   <p className="font-semibold text-sm text-brand-navy">{ISSUE_LABELS[req.issue_type] || req.issue_type}{req.fault_code ? ` — ${req.fault_code}` : ''}</p>
                   {req.installation_company && <p className="text-xs text-gray-500 mt-0.5">{req.installation_company}</p>}
+                  {req.assigned_admin_name && req.status !== 'closed' && (
+                    <p className="text-xs text-brand-purple font-medium mt-1">With {req.assigned_admin_name}</p>
+                  )}
                   <p className="text-xs text-gray-400 mt-1 line-clamp-2">{req.description_en || req.description_fr}</p>
                 </button>
               ))}
@@ -347,6 +375,16 @@ export default function AdminPage({ session }) {
           <div className="flex-1 min-w-0">
             <p className="text-white font-bold truncate">{selected.installation_company || selected.user_email}</p>
             <p className="text-white/50 text-xs">{formatDate(selected.created_at)}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-brand-cyan">
+                {selected.assigned_admin_name ? `With ${selected.assigned_admin_name}` : 'Unassigned'}
+              </span>
+              {selected.assigned_admin_id !== session.user.id && selected.status !== 'closed' && (
+                <button onClick={takeOver} className="text-[11px] font-semibold text-white bg-white/20 rounded-lg px-2 py-0.5">
+                  {selected.assigned_admin_id ? 'Take over' : 'Assign to me'}
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex gap-1.5 flex-shrink-0">
             <Badge value={selected.urgency} map={URGENCY} />

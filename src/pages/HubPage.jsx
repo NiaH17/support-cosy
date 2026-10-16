@@ -44,6 +44,22 @@ export default function HubPage({ session }) {
       bg: 'bg-purple-50', color: 'text-brand-purple',
       icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
     },
+    {
+      id: 'enregistrer-installation',
+      route: '/installations/nouvelle',
+      label: 'Enregistrer une installation',
+      subtitle: 'Registre fabricant : numéros de série, photos, signatures',
+      bg: 'bg-green-50', color: 'text-brand-green',
+      icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    },
+    {
+      id: 'mes-installations',
+      route: '/installations',
+      label: 'Mes installations',
+      subtitle: 'Retrouver vos installations enregistrées',
+      bg: 'bg-cyan-50', color: 'text-cyan-600',
+      icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v14l-3-2-2 2-2-2-2 2-2-2-3 2V6a2 2 0 012-2z" /></svg>,
+    },
   ]
 
   return (

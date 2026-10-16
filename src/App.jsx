@@ -8,6 +8,8 @@ import InfoPage from './pages/InfoPage'
 import SupportPage from './pages/SupportPage'
 import AdminPage from './pages/AdminPage'
 import UserTicketsPage from './pages/UserTicketsPage'
+import InstallRegisterPage from './pages/InstallRegisterPage'
+import MyInstallsPage from './pages/MyInstallsPage'
 import GlobalNotifier from './components/GlobalNotifier'
 
 function ScrollToTop() {
@@ -64,6 +66,12 @@ export default function App() {
         } />
         <Route path="/mes-demandes" element={
           <ProtectedRoute session={session}><UserTicketsPage session={session} /></ProtectedRoute>
+        } />
+        <Route path="/installations/nouvelle" element={
+          <ProtectedRoute session={session}><InstallRegisterPage session={session} /></ProtectedRoute>
+        } />
+        <Route path="/installations" element={
+          <ProtectedRoute session={session}><MyInstallsPage session={session} /></ProtectedRoute>
         } />
         <Route path="/admin" element={
           <AdminRoute session={session}><AdminPage session={session} /></AdminRoute>

@@ -80,6 +80,15 @@ export default async function handler(req, res) {
         .update({ status: 'in_progress', replied_at: new Date().toISOString() })
         .eq('id', request_id)
         .eq('status', 'open')
+      // The first admin to reply becomes the person handling the ticket (others can take over from the admin page)
+      await supabase
+        .from('fr_support_requests')
+        .update({
+          assigned_admin_id: caller.user.id,
+          assigned_admin_name: caller.user.user_metadata?.full_name || caller.user.email,
+        })
+        .eq('id', request_id)
+        .is('assigned_admin_id', null)
     }
 
     return res.status(200).json({ success: true, message: data })
