@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../../lib/supabase'
+import { CHECKS } from '../../lib/installFields'
 
 const ISSUE_LABELS = {
   electrical: 'Electrical problem', mechanical: 'Mechanical problem',
@@ -77,6 +79,12 @@ function Section({ title, children }) {
 
 export default function ReportingTab({ requests }) {
   const [range, setRange] = useState('30')
+  const [installs, setInstalls] = useState([])
+
+  useEffect(() => {
+    supabase.from('fr_installations').select('id, install_date, model, partner_contractor, user_email, checks')
+      .then(({ data }) => setInstalls(data || []))
+  }, [])
 
   const data = useMemo(() => {
     const now = new Date()
@@ -96,6 +104,27 @@ export default function ReportingTab({ requests }) {
       const b = buckets.find(x => x.start.getTime() === bs)
       if (b) b.count++
     })
+
+    // Installs registered in the same period (by install date)
+    const instInRange = installs.filter(i => new Date(i.install_date) >= from)
+    const instBuckets = buckets.map(b => ({ start: b.start, count: 0 }))
+    instInRange.forEach(i => {
+      const bs = bucketStart(new Date(i.install_date), unit).getTime()
+      const b = instBuckets.find(x => x.start.getTime() === bs)
+      if (b) b.count++
+    })
+    const byModel = {}
+    const byPartner = {}
+    instInRange.forEach(i => {
+      byModel[i.model] = (byModel[i.model] || 0) + 1
+      const name = (i.partner_contractor || '').trim() || i.user_email || 'Unknown'
+      const k = name.toLowerCase()
+      byPartner[k] = byPartner[k] || { key: k, label: name, count: 0 }
+      byPartner[k].count++
+    })
+    const modelRows = Object.entries(byModel).map(([k, count]) => ({ key: k, label: k, count })).sort((a, b) => b.count - a.count)
+    const partnerRows = Object.values(byPartner).sort((a, b) => b.count - a.count)
+    const incomplete = instInRange.filter(i => CHECKS.some(c => !i.checks?.[c.key])).length
 
     // By type
     const byType = {}
@@ -142,10 +171,12 @@ export default function ReportingTab({ requests }) {
       active: inRange.filter(r => r.status === 'in_progress').length,
       closed: inRange.filter(r => ['closed', 'resolved'].includes(r.status)).length,
       avgReply, urgency, unit, buckets, typeRows, whoRows, codeRows, codeTotal,
+      installTotal: instInRange.length, instBuckets, modelRows, partnerRows, incomplete,
     }
-  }, [requests, range])
+  }, [requests, installs, range])
 
   const maxBucket = Math.max(1, ...data.buckets.map(b => b.count))
+  const maxInst = Math.max(1, ...data.instBuckets.map(b => b.count))
 
   return (
     <div className="space-y-4">
@@ -163,6 +194,8 @@ export default function ReportingTab({ requests }) {
         <Stat label="Avg. time to first reply" value={fmtDuration(data.avgReply)} />
         <Stat label="Awaiting first reply" value={data.awaiting} sub={`${data.active} in progress · ${data.closed} closed`} />
         <Stat label="Urgent" value={data.urgency.high} sub={`${data.urgency.medium} normal · ${data.urgency.low} low`} />
+        <Stat label="Installs registered" value={data.installTotal} sub={data.incomplete ? `${data.incomplete} with unticked checks` : undefined} />
+        <Stat label="Requests per 10 installs" value={data.installTotal ? ((data.total / data.installTotal) * 10).toFixed(1) : '—'} />
       </div>
 
       <Section title={`Requests per ${data.unit}`}>
@@ -187,6 +220,40 @@ export default function ReportingTab({ requests }) {
           </>
         )}
       </Section>
+
+      <Section title={`Installs registered per ${data.unit}`}>
+        {data.installTotal === 0 ? (
+          <p className="text-xs text-gray-400 py-2">No installs in this period</p>
+        ) : (
+          <>
+            <div className="flex items-end gap-[3px] h-32">
+              {data.instBuckets.map((b, i) => (
+                <div key={i} className="flex-1 flex flex-col justify-end h-full min-w-0" title={`${bucketLabel(b.start, data.unit)}: ${b.count}`}>
+                  {data.instBuckets.length <= 16 && b.count > 0 && (
+                    <span className="text-[10px] text-gray-500 text-center leading-none mb-0.5">{b.count}</span>
+                  )}
+                  <div className="w-full rounded-t bg-brand-green" style={{ height: `${(b.count / maxInst) * 100}%`, minHeight: b.count ? 3 : 0 }} />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between mt-1.5 text-[10px] text-gray-400">
+              <span>{bucketLabel(data.instBuckets[0].start, data.unit)}</span>
+              <span>{bucketLabel(data.instBuckets[data.instBuckets.length - 1].start, data.unit)}</span>
+            </div>
+          </>
+        )}
+      </Section>
+
+      {data.installTotal > 0 && (
+        <>
+          <Section title="Installs by model">
+            <BarList rows={data.modelRows} total={data.installTotal} color="bg-brand-green" />
+          </Section>
+          <Section title="Installs by partner / contractor">
+            <BarList rows={data.partnerRows} total={data.installTotal} color="bg-brand-green" />
+          </Section>
+        </>
+      )}
 
       <Section title="By type of request">
         <BarList rows={data.typeRows} total={data.total} />
