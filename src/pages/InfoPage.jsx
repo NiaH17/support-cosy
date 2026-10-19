@@ -287,17 +287,15 @@ const PROCEDURES = [
       { step: 6, title: "Purger l'air résiduel", detail: "Effectuer une courte purge pour éliminer l'air introduit pendant l'opération." },
     ],
   },
-  {
+    {
     id: 'secondary-pump',
     title: 'Réglage de la pompe secondaire',
     category: 'Configuration',
-    description: "Paramétrer la vitesse et le mode de fonctionnement de la pompe secondaire.",
+    description: "Pour régler la pompe secondaire afin d'obtenir un ΔT of 5 sur un système à ballon tampon 4 tuyaux, laisser d'abord la température de départ atteindre sa consigne, puis ajuster la pompe secondaire pour obtenir un ΔT of 5. Pour accélérer la procédure, utiliser la température de départ fixe pour laquelle le système a été conçu. Remarque : en présence d'un plancher chauffant, une température de départ plus élevée déclenchera le thermostat de sécurité, qui fermera la vanne 2 voies.",
     steps: [
-      { step: 1, title: "Accéder aux paramètres pompe", detail: "Dans l'application installateur : Paramètres → Paramètres système → Pompe secondaire." },
-      { step: 2, title: 'Sélectionner le mode', detail: "Mode proportionnel (recommandé) : la pompe ajuste automatiquement sa vitesse selon la demande. Mode vitesse fixe : régler la vitesse manuellement de 0 à 100%." },
-      { step: 3, title: 'Pour le mode proportionnel', detail: "Régler la pression différentielle de consigne entre 0,2 et 0,5 bar. Commencer à 0,3 bar pour une installation standard." },
-      { step: 4, title: 'Pour le mode vitesse fixe', detail: "Régler à 100% pour la purge initiale, puis réduire progressivement jusqu'à obtenir un ΔT de 5–10°C entre départ et retour en chauffage." },
-      { step: 5, title: 'Vérifier les températures de départ/retour', detail: "En fonctionnement, confirmer que les températures de départ et retour sont cohérentes avec la consigne et le type d'émetteurs." },
+      { step: 1, title: 'Ouvrir tous les émetteurs', detail: "S'assurer que tous les émetteurs sont entièrement ouverts, y compris les zones de plancher chauffant." },
+      { step: 2, title: 'Installer des thermomètres à pince', detail: "Fixer des thermomètres à pince sur le départ et le retour côté émetteurs du ballon tampon." },
+      { step: 3, title: 'Surveiller et ajuster', detail: "Surveiller la température des deux pinces. Lorsque l'unité produit la consigne de température de départ souhaitée et module, ajuster la vitesse de la pompe secondaire pour obtenir un ΔT of 5 entre le départ et le retour côté émetteurs." },
     ],
   },
 ]
