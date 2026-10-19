@@ -237,16 +237,13 @@ const PROCEDURES = [
     title: "Purge d'air",
     category: 'Maintenance',
     description: "Pour effectuer une purge d'air depuis l'application d'un installateur autorisé.",
-    steps: [
-      { step: 1, title: 'Ouvrir toutes les vannes', detail: 'Vérifier que toutes les vannes, les zones de plancher chauffant et les radiateurs sont entièrement ouverts.' },
-      { step: 2, title: 'Purger le collecteur et les circuits', detail: "Purger manuellement le collecteur de plancher chauffant et les purgeurs de radiateurs jusqu'à l'écoulement d'eau sans bulles." },
-      { step: 3, title: "Accéder au mode purge via l'application installateur", detail: "Dans l'application installateur, aller dans Contrôles → Mode purge. La pompe tourne en continu pour permettre la purge." },
-      { step: 4, title: 'Purger le purgeur automatique de l\'unité', detail: "Localiser le purgeur automatique à l'intérieur de l'unité et desserrer légèrement le capuchon pour permettre l'évacuation de l'air." },
-      { step: 5, title: 'Surveiller la pression', detail: "Surveiller la pression durant la purge. Si elle tombe en dessous de 0,5 bar, ajouter de l'eau via le robinet de remplissage." },
-      { step: 6, title: 'Rétablir la pression finale', detail: "Après purge, ajuster la pression à 1,5–2,0 bar à froid. Refermer tous les purgeurs et resserrer les capuchons." },
+        steps: [
+      { step: 1, title: 'Entrer en mode installateur AP', detail: "Ouvrir l'onglet de configuration du système." },
+      { step: 2, title: 'Vérifier que tous les émetteurs sont ouverts', detail: "S'assurer que tous les émetteurs sont entièrement ouverts, y compris les zones de plancher chauffant." },
+      { step: 3, title: 'Régler la pompe primaire à 100 %', detail: "Sélectionner la pompe primaire sur « on »." },
+      { step: 4, title: "Activer la pompe ECS", detail: "Activer l'interrupteur de la pompe ECS pour purger l'air du circuit d'eau chaude sanitaire." },
+      { step: 5, title: 'Répéter pour chaque zone', detail: "Une fois le circuit ECS terminé, répéter l'opération pour la zone 1 (et la zone 2 / Aux si nécessaire) jusqu'à évacuation de l'air excédentaire. Mettre la pompe ECS sur « off » avant de passer à la zone 1, et la zone 1 sur « off » avant de passer à la zone 2." },
     ],
-    note: "Si une panne active de débit empêche la purge, effectuer un cycle d'alimentation de la pompe à chaleur depuis l'isolateur. Attendre quelques minutes, remettre sous tension, puis effectuer immédiatement une purge via le mode AP.",
-  },
   {
     id: 'reset-pods',
     title: 'Réinitialisation des pods',
