@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ImageRow } from '../components/GuideImages'
 
 // ── Unit specs (source: Manuel d'installation FRV1, section 7) ──────────────────
 
@@ -478,6 +479,9 @@ export default function InfoPage() {
         {/* Cosy Hub LEDs */}
         {section === 'hub' && (
           <div>
+            <div className="mb-5">
+              <ImageRow images={[{ src: '/images/cosy-hub-front.png', caption: 'Cosy Hub — face avant' }]} title="Cosy Hub" />
+            </div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">États des voyants LED</p>
             <div className="space-y-2">
               {LED_STATES.map((led, i) => {

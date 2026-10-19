@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { InlineImage, ImageRow, ImageLightbox } from '../components/GuideImages'
 
 // ── Quick checks ──────────────────────────────────────────────────────────────
 
@@ -79,8 +80,8 @@ const FAN_GUIDE = {
   ],
   steps: [
     { step: 1, title: 'Vérifier le blocage du ventilateur', detail: "Si un bruit de frottement est audible, utiliser une lampe torche pour vérifier si quelque chose est tombé dans la grille du ventilateur." },
-    { step: 2, title: 'Vérifier le connecteur ventilateur sur la carte CA', detail: "Vérifier que le connecteur du ventilateur principal sur la carte CA est bien enfiché et non desserré." },
-    { step: 3, title: 'Vérifier le connecteur ventilateur sur la carte CC', detail: "Vérifier que la connexion du ventilateur principal sur la carte CC est bien enfiché et non desserré." },
+    { step: 2, title: 'Vérifier le connecteur ventilateur sur la carte CA', detail: "Vérifier que le connecteur du ventilateur principal sur la carte CA est bien enfiché et non desserré.", image: { src: '/images/troubleshooting/ac-pcb.png', caption: "Carte CA — connecteur du ventilateur principal", hotspots: [ { id: 'ac-fan-plug', pos: { x: 0.4793, y: 0.1250 }, type: 'circle', radius: 0.08, label: 'Connecteur du ventilateur principal' } ] } },
+    { step: 3, title: 'Vérifier le connecteur ventilateur sur la carte CC', detail: "Vérifier que la connexion du ventilateur principal sur la carte CC est bien enfiché et non desserré.", image: { src: '/images/troubleshooting/dc-pcb.png', caption: "Carte CC — connecteur du ventilateur principal", hotspots: [ { id: 'dc-fan-plug', pos: { x: 0.5809, y: 0.2925 }, type: 'circle', radius: 0.08, label: 'Connecteur du ventilateur principal' } ] } },
     { step: 4, title: "Vérifier la tension d'alimentation", detail: "Vérifier que la tension d'alimentation du ventilateur principal depuis la carte CA est bien 230V CA." },
   ],
   escalate: true,
@@ -118,7 +119,7 @@ const GUIDES = {
       { step: 3, title: "Effectuer une purge d'air", detail: "S'assurer qu'il n'y a pas de poche d'air dans les canalisations en hauteur. Suivre la procédure de purge d'air." },
       { step: 4, title: 'Vérifier tous les filtres', detail: "Vérifier le filtre à l'avant de l'unité et le tamis du filtre magnétique — nettoyer si bloqué." },
       { step: 5, title: 'Vérifier toutes les vannes', detail: 'Confirmer que toutes les vannes et radiateurs sont entièrement ouverts.' },
-      { step: 6, title: 'Mode AP — augmenter la vitesse de la pompe', detail: "Si l'erreur persiste, passer en mode AP et régler la vitesse de la pompe à 100% pour chasser l'air résiduel du circuit." },
+      { step: 6, title: 'Mode AP — augmenter la vitesse de la pompe', detail: "Si l'erreur persiste, passer en mode AP et régler la vitesse de la pompe à 100% pour chasser l'air résiduel du circuit.", images: [ { src: '/images/troubleshooting/upm4xxl-pump.png', caption: "Pompe Grundfos UPM4XXL" } ] },
     ],
     note: "Si la purge d'air est impossible car la panne est active, effectuer un cycle d'alimentation de la pompe à chaleur depuis l'isolateur. Attendre quelques minutes, remettre sous tension, puis effectuer immédiatement une purge d'air via le mode AP.",
     escalate: true,
@@ -136,13 +137,14 @@ const GUIDES = {
     ],
     steps: [
       { step: 1, title: "Vérifier l'isolateur", detail: "Confirmer que l'isolateur est en marche et qu'aucun disjoncteur d'alimentation n'a déclenché." },
-      { step: 2, title: 'Vérifier le voyant de la carte CA', detail: "Confirmer que le voyant de la carte CA clignote." },
-      { step: 3, title: 'Vérifier les voyants de la carte CC', detail: "Les voyants Yeux et Cœur sur la carte CC doivent clignoter. Sinon, vérifier toutes les connexions sur les deux cartes." },
+      { step: 2, title: 'Vérifier le voyant de la carte CA', detail: "Confirmer que le voyant de la carte CA clignote.", image: { src: '/images/troubleshooting/ac-pcb.png', caption: "Carte CA — disposition", hotspots: [ { id: 'ac-led', pos: { x: 0.5083, y: 0.8775 }, label: 'Voyant LED' } ] } },
+      { step: 3, title: 'Vérifier les voyants de la carte CC', detail: "Les voyants Yeux et Cœur sur la carte CC doivent clignoter. Sinon, vérifier toutes les connexions sur les deux cartes.", image: { src: '/images/troubleshooting/dc-pcb.png', caption: "Carte CC V1.6 — disposition", hotspots: [ { id: 'dc-led', pos: { x: 0.5299, y: 0.5575 }, label: 'Voyants LED (Yeux et Cœur)' } ] } },
       { step: 4, title: "Vérifier les connexions d'alimentation", detail: "Vérifier l'alimentation de la pompe à chaleur au bornier." },
       { step: 5, title: 'Vérifier le câblage Modbus', detail: "Confirmer les terminaisons Modbus dans l'unité et le hub, puis vérifier la continuité du câble." },
       { step: 6, title: "Vérifier la connexion Modbus à l'onduleur", detail: "Vérifier la connexion sur le côté de l'onduleur au bornier vert." },
       { step: 7, title: 'Vérifier les connexions Modbus sur la carte CA', detail: "Vérifier les connexions Modbus pour s'assurer que : tout est correctement connecté et rien n'est desserré, le connecteur est correctement inséré dans la carte CA, les fils sont dans la bonne orientation." },
     ],
+    image: { src: '/images/troubleshooting/ac-pcb-modbus.png', caption: "Carte CA — connecteur Modbus" },
     escalate: true,
   },
 
@@ -271,6 +273,7 @@ const COMMISSIONING_GUIDES = {
       { step: 3, title: "Tester les bornes du port eau chaude", detail: "Sur les bornes du port eau chaude, confirmer 230V entre L+PE et L+N. La borne ECS est une ligne de commutation et ne doit afficher 230V que lors d'un appel de chaleur." },
       { step: 4, title: 'Tester les ports zone 2 et AUX/zone 3', detail: "Les ports zone 2 et AUX/zone 3, laissés déconnectés, sont sans tension. Testés en continuité, ils afficheront un circuit ouvert sans appel de chaleur, et 0 Ω ou plus lors d'un appel de chaleur." },
     ],
+    image: { src: '/images/procedures/hub-wiring-diagram.png', caption: "Cosy Hub — schéma de câblage" },
   },
 }
 
@@ -279,6 +282,7 @@ const COMMISSIONING_GUIDES = {
 function GuideView({ guide, onEscalate, onBack, backLabel }) {
   const navigate = useNavigate()
   const [resolved, setResolved] = useState(false)
+  const [lightbox, setLightbox] = useState(null)
 
   if (resolved) {
     return (
@@ -328,11 +332,17 @@ function GuideView({ guide, onEscalate, onBack, backLabel }) {
               <div className="flex-1">
                 <p className="text-sm font-semibold text-brand-navy">{s.title}</p>
                 <p className="text-sm text-gray-600 mt-0.5">{s.detail}</p>
+                {s.image && <InlineImage img={s.image} onOpen={setLightbox} />}
+                {s.images && <div className="mt-3"><ImageRow images={s.images} title="Photo de référence" /></div>}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {guide.image && <InlineImage img={guide.image} onOpen={setLightbox} />}
+      {guide.images && guide.images.length > 0 && <ImageRow images={guide.images} />}
+      {lightbox && <ImageLightbox src={lightbox.src} caption={lightbox.caption} onClose={() => setLightbox(null)} />}
 
       {guide.note && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex gap-2.5">
