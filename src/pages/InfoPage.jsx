@@ -252,12 +252,13 @@ const PROCEDURES = [
     title: 'Réinitialisation des pods',
     category: 'Configuration',
     description: 'À effectuer si les pods ne répondent pas ou doivent être couplés à nouveau.',
-    steps: [
-      { step: 1, title: 'Retirer la pile', detail: 'Ouvrir le pod et retirer la pile.' },
-      { step: 2, title: 'Maintenir le bouton enfoncé', detail: 'Maintenir le bouton du pod enfoncé.' },
-      { step: 3, title: 'Réinsérer la pile tout en maintenant', detail: 'Tout en maintenant le bouton, réinsérer la pile.' },
-      { step: 4, title: 'Attendre le voyant rouge', detail: "Continuer à maintenir jusqu'à l'apparition du voyant rouge. Relâcher ensuite." },
-      { step: 5, title: 'Recouplage', detail: "Le pod est maintenant réinitialisé. Suivre la procédure de couplage dans l'application." },
+        steps: [
+      { step: 1, title: 'Supprimer tous les pods', detail: "Aller à la page « Pods » en mode installateur AP et supprimer tous les pods (les boutons de suppression sont tout à droite ; il faudra peut-être faire défiler la page horizontalement pour les voir)." },
+      { step: 2, title: 'Identifier les pods à réinitialiser', detail: "Réinitialiser tous les pods qui ne clignotent pas en violet, comme décrit dans les étapes suivantes." },
+      { step: 3, title: 'Retirer les piles', detail: "Retirer les piles du pod." },
+      { step: 4, title: 'Maintenir le bouton boost et réinsérer les piles', detail: "Maintenir le bouton boost enfoncé et réinsérer les piles (tout en continuant à maintenir le bouton boost enfoncé)." },
+      { step: 5, title: "Attendre l'arrêt du clignotement rouge", detail: "Attendre que le voyant rouge du pod cesse de clignoter (cela peut prendre environ 15 secondes). Le voyant devient ensuite violet et clignote." },
+      { step: 6, title: 'Recoupler le pod', detail: "Recoupler le pod en suivant la procédure décrite dans « Couplage des pods »." },
     ],
   },
   {
