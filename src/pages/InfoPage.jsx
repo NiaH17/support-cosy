@@ -204,15 +204,18 @@ const COMMISSIONING_SECTIONS = [
       { step: 4, title: 'Affecter les pods aux zones', detail: "Pour chaque zone active, affecter le(s) pod(s) de thermostat correspondant(s)." },
     ],
   },
-  {
+    {
     id: 'flow-temps',
     title: 'Températures de départ',
     steps: [
-      { step: 1, title: 'Identifier le type d\'émetteurs', detail: "Plancher chauffant basse température : consigne 35–42°C. Radiateurs basse température : consigne 45–50°C. Radiateurs traditionnels : consigne 55–60°C." },
-      { step: 2, title: 'Régler la consigne de départ max', detail: "Dans l'application, aller dans Paramètres → Paramètres système → Températures de départ. Régler la température max de départ selon le type d'émetteur." },
-      { step: 3, title: 'Activer la loi d\'eau si disponible', detail: "Si le mode loi d'eau est disponible, l'activer et régler les points de consigne selon la documentation technique." },
-      { step: 4, title: 'Vérifier les températures de départ/retour en fonctionnement', detail: "Lors d'un appel de chaleur, vérifier les températures de départ et retour sur le hub. L'écart normal est de 5 à 10°C." },
+      { step: 1, title: 'Ouvrir la page des points de consigne', detail: "Appuyer sur le bouton menu en haut à gauche, puis aller à la page « Points de consigne » (Setpoints)." },
+      { step: 2, title: 'Activer la loi d\'eau', detail: "Activer la compensation météo (Weather Compensation)." },
+      { step: 3, title: 'Régler les températures de départ maximales', detail: "Régler la température de départ cible et la température de départ maximale en loi d'eau sur la température de départ de conception." },
+      { step: 4, title: 'Régler la température de départ minimale', detail: "Régler la température de départ minimale en loi d'eau sur 36 °C." },
+      { step: 5, title: 'Laisser la température extérieure haute', detail: "Laisser la température extérieure haute en loi d'eau à 12 °C." },
+      { step: 6, title: 'Régler la température extérieure basse', detail: "Régler la température extérieure basse en loi d'eau sur la température extérieure utilisée dans le calcul de conception." },
     ],
+    note: "La température de l'eau chaude sanitaire n'est pas réglée lors de la mise en service. La température et la programmation de l'eau chaude se règlent via les commandes de l'application Octopus pour le système Cosy.",
   },
   {
     id: 'pods',
