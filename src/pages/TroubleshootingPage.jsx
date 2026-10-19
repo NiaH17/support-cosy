@@ -163,7 +163,7 @@ const GUIDES = {
     steps: [
       { step: 1, title: "Cycle d'alimentation de l'unité", detail: "Éteindre et rallumer l'unité. Écouter un clic après l'extinction pour confirmer l'arrêt complet." },
       { step: 2, title: "Vérifier la tension d'alimentation", detail: "Confirmer la présence de 230V aux bornes d'alimentation principale de la pompe à chaleur." },
-      { step: 3, title: "Vérifier les tensions de l'onduleur", detail: "Confirmer les tensions correctes sur l'entraînement de l'onduleur." },
+      { step: 3, title: "Vérifier les tensions de l'onduleur", detail: "Vérifier que la tension d'alimentation de l'onduleur est correcte et que les tensions de sortie vers le compresseur et la bobine d'arrêt (Cosy 6 et 9) sont équilibrées." },
     ],
     escalate: true,
   },
