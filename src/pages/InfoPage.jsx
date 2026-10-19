@@ -194,14 +194,17 @@ const LED_STATES = [
 // ── Commissioning ─────────────────────────────────────────────────────────────
 
 const COMMISSIONING_SECTIONS = [
-  {
+    {
     id: 'zones',
     title: 'Configuration des zones',
     steps: [
-      { step: 1, title: "Ouvrir l'application Octopus", detail: "Aller dans l'application Octopus et sélectionner votre système Cosy." },
-      { step: 2, title: 'Accéder aux paramètres du système', detail: "Aller dans Paramètres → Paramètres système → Zones." },
-      { step: 3, title: 'Configurer les zones souhaitées', detail: "Activer/désactiver les zones et leur affecter des noms de pièces si souhaité." },
-      { step: 4, title: 'Affecter les pods aux zones', detail: "Pour chaque zone active, affecter le(s) pod(s) de thermostat correspondant(s)." },
+      { step: 1, title: "Activer le « Mode installateur »", detail: "Appuyer pendant 10 secondes sur le bouton noir situé en haut du hub, jusqu'à ce que le voyant d'état devienne bleu fixe." },
+      { step: 2, title: 'Se connecter au Wi-Fi du hub', detail: "Dans les paramètres Wi-Fi de la tablette (ou de l'ordinateur portable ou du mobile), sélectionner OCTO-COSYHUB." },
+      { step: 3, title: 'Trouver le mot de passe', detail: "Le mot de passe se trouve sur le côté du Cosy Hub ou à l'intérieur du couvercle de câblage." },
+      { step: 4, title: "Accéder au site installateur", detail: "Une fois connecté à OCTO-COSYHUB, saisir 192.168.1.1 dans le navigateur de la tablette (ou de l'ordinateur portable ou du mobile). La page « Accueil » s'affiche par défaut." },
+      { step: 5, title: 'Aller dans la configuration du système', detail: "Ouvrir la section « Configuration du système »." },
+      { step: 6, title: 'Configurer les zones souhaitées', detail: "Activer ou désactiver les zones et leur attribuer des noms de pièces si souhaité." },
+      { step: 7, title: 'Affecter les pods aux zones', detail: "Pour chaque zone active, affecter le ou les pods thermostats correspondants." },
     ],
   },
   {
