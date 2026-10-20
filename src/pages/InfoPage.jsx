@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ImageRow } from '../components/GuideImages'
 
 // ── Unit specs (source: Manuel d'installation FRV1, section 7) ──────────────────
 
@@ -194,6 +195,12 @@ const LED_STATES = [
 // ── Commissioning ─────────────────────────────────────────────────────────────
 
 const COMMISSIONING_SECTIONS = [
+  {
+    id: 'controller-ref',
+    title: 'Écrans du contrôleur Cosy (EN + FR)',
+    iframe: '/reference/cosy-controller.html',
+    steps: [],
+  },
   {
     id: 'zones',
     title: 'Configuration des zones',
@@ -478,6 +485,9 @@ export default function InfoPage() {
         {/* Cosy Hub LEDs */}
         {section === 'hub' && (
           <div>
+            <div className="mb-5">
+              <ImageRow images={[{ src: '/images/cosy-hub-front.png', caption: 'Cosy Hub — face avant' }]} title="Cosy Hub" />
+            </div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">États des voyants LED</p>
             <div className="space-y-2">
               {LED_STATES.map((led, i) => {
@@ -526,6 +536,23 @@ export default function InfoPage() {
         )}
         {section === 'commissioning' && selected && (() => {
           const cs = COMMISSIONING_SECTIONS.find(c => c.id === selected)
+          if (cs.iframe) {
+            return (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <button onClick={() => setSelected(null)} className="flex items-center gap-1.5 text-brand-purple text-sm font-medium">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    Mise en service
+                  </button>
+                  <a href={cs.iframe} target="_blank" rel="noreferrer" className="text-brand-purple text-sm font-medium">Plein écran ↗</a>
+                </div>
+                <h2 className="font-bold text-brand-navy text-lg mb-1">{cs.title}</h2>
+                <p className="text-sm text-gray-500 mb-3">Les écrans du contrôleur sont en anglais. La traduction française figure entre crochets.</p>
+                <iframe src={cs.iframe} title={cs.title} sandbox="allow-scripts allow-same-origin"
+                  className="w-full rounded-2xl border border-gray-200 bg-white" style={{ height: 'calc(100vh - 230px)', minHeight: 480 }} />
+              </div>
+            )
+          }
           return (
             <div>
               <button onClick={() => setSelected(null)} className="flex items-center gap-1.5 text-brand-purple text-sm font-medium mb-4">
