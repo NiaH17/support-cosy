@@ -251,6 +251,8 @@ const PROCEDURES = [
       { step: 4, title: "Activer la pompe ECS", detail: "Activer l'interrupteur de la pompe ECS pour purger l'air du circuit d'eau chaude sanitaire." },
       { step: 5, title: 'Répéter pour chaque zone', detail: "Une fois le circuit ECS terminé, répéter l'opération pour la zone 1 (et la zone 2 / Aux si nécessaire) jusqu'à évacuation de l'air excédentaire. Mettre la pompe ECS sur « off » avant de passer à la zone 1, et la zone 1 sur « off » avant de passer à la zone 2." },
     ],
+  note: "Si une panne active de débit empêche la purge, effectuer un cycle d'alimentation de la pompe à chaleur depuis l'isolateur. Attendre quelques minutes, remettre sous tension, puis effectuer immédiatement une purge via le mode AP.",
+  },
   {
     id: 'reset-pods',
     title: 'Réinitialisation des pods',
