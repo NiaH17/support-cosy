@@ -1,0 +1,607 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cosy Controller FR Reference</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: fixed left nav (page list) + single scrolling content panel on the right,
+   collapsing to a horizontal tab strip above the content on narrow screens */
+:root{
+  --bg:#f3f5f2;
+  --surface:#ffffff;
+  --sidebar:#eef1ed;
+  --border:#dde1dc;
+  --fg:#1a1f1c;
+  --fg-muted:#6b756e;
+  --accent:#1f7a68;
+  --accent-fg:#ffffff;
+  --good:#1f7a4d;
+  --bad:#9a3b3b;
+  --chip-bg:#eaf3ef;
+  --note-bg:#fff3e0;
+  --note-border:#e8c27a;
+  --note-fg:#6b4c12;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141715; --surface:#1c201d; --sidebar:#191d1a; --border:#2d322e;
+    --fg:#eef1ee; --fg-muted:#9aa49d; --accent:#49c2a4; --accent-fg:#0c1a16;
+    --good:#49c2a4; --bad:#e08a8a; --chip-bg:#1f2d27;
+    --note-bg:#2a2414; --note-border:#6b5420; --note-fg:#e0c285;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141715; --surface:#1c201d; --sidebar:#191d1a; --border:#2d322e;
+  --fg:#eef1ee; --fg-muted:#9aa49d; --accent:#49c2a4; --accent-fg:#0c1a16;
+  --good:#49c2a4; --bad:#e08a8a; --chip-bg:#1f2d27;
+  --note-bg:#2a2414; --note-border:#6b5420; --note-fg:#e0c285;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--fg);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;}
+.fr{color:var(--fg-muted);font-style:italic;font-weight:400;}
+
+.shell{display:flex;min-height:100%;align-items:flex-start;}
+
+.sidebar{
+  width:250px;
+  flex-shrink:0;
+  background:var(--sidebar);
+  border-right:1px solid var(--border);
+  padding:20px 14px calc(20px + env(safe-area-inset-bottom,0px));
+  position:sticky;
+  top:env(safe-area-inset-top,0px);
+  align-self:flex-start;
+  height:100vh;
+  overflow-y:auto;
+}
+.brand{padding:4px 10px 16px;}
+.brand .name{font-weight:700;font-size:15.5px;}
+.brand .sub{color:var(--fg-muted);font-size:12px;margin-top:2px;}
+.navlist{display:flex;flex-direction:column;gap:2px;}
+.navlist a{
+  display:block;
+  padding:9px 10px;
+  border-radius:8px;
+  color:var(--fg-muted);
+  text-decoration:none;
+  font-size:13.5px;
+  font-weight:500;
+}
+.navlist a .fr{display:block;font-size:11.5px;margin-top:1px;}
+.navlist a:hover{background:var(--surface);color:var(--fg);}
+.navlist a.active{background:var(--accent);color:var(--accent-fg);}
+.navlist a.active .fr{color:var(--accent-fg);opacity:.85;}
+
+.main{flex:1;min-width:0;padding-inline:22px;padding-block:28px 60px;}
+.wrap{max-width:900px;margin:0 auto;}
+
+.eyebrow{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-muted);font-weight:600;margin:0 0 6px;}
+h1{font-size:clamp(24px,4vw,30px);margin:0 0 4px;font-weight:700;text-wrap:balance;}
+.fr-title{color:var(--fg-muted);font-style:italic;font-weight:400;font-size:.56em;margin-left:.4em;}
+.lede{color:var(--fg-muted);font-size:14px;margin:0 0 24px;max-width:62ch;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:22px;}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);font-weight:600;font-size:14.5px;}
+.card-head .fr{display:block;font-weight:400;font-size:12.5px;margin-top:1px;}
+.card-body{padding:18px;}
+
+.kv{display:grid;grid-template-columns:260px auto;row-gap:12px;column-gap:10px;font-size:14px;}
+.kv dt{color:var(--fg-muted);}
+.kv dt .fr{display:block;font-size:12px;}
+.kv dd{margin:0;font-weight:500;}
+@media (max-width:560px){.kv{grid-template-columns:1fr;row-gap:4px;}}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:640px;}
+th{text-align:left;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+th .fr{display:block;text-transform:none;letter-spacing:0;font-size:11px;margin-top:2px;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13.5px;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+td.num{text-align:right;}
+
+input[type=text], input[type=number]{
+  width:100%;min-width:90px;border:1px solid var(--border);border-radius:7px;
+  background:var(--bg);color:var(--fg);padding:7px 10px;font-size:13.5px;font-family:inherit;
+}
+select{border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--fg);padding:7px 10px;font-size:13.5px;font-family:inherit;}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.hint{color:var(--fg-muted);font-size:12px;margin-top:5px;line-height:1.4;}
+
+.status{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot.good{background:var(--good);}
+.dot.bad{background:var(--bad);}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip-bg);color:var(--good);border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:600;}
+
+.btn{font-family:inherit;font-size:13px;font-weight:500;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--fg);padding:8px 13px;cursor:pointer;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+.btn-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);}
+.btn-primary:hover{opacity:.9;color:var(--accent-fg);}
+
+.switchrow{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:4px 0;}
+.switch{position:relative;width:38px;height:22px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.switch .track{position:absolute;inset:0;background:var(--border);border-radius:999px;transition:background .15s;}
+.switch .thumb{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--surface);transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.25);}
+.switch input:checked + .track{background:var(--accent);}
+.switch input:checked + .track + .thumb{transform:translateX(16px);}
+
+.note{background:var(--note-bg);border:1px solid var(--note-border);color:var(--note-fg);border-radius:8px;padding:8px 12px;font-size:12.5px;margin-top:8px;line-height:1.4;}
+.note b{font-weight:700;}
+
+.infobox{background:var(--chip-bg);border-radius:8px;padding:14px 16px;margin:0 0 16px;max-width:620px;font-size:13.5px;}
+.infobox b{display:block;margin-bottom:8px;}
+.infobox ol{margin:0;padding-left:20px;}
+.infobox li{margin-bottom:6px;}
+
+.toggles{display:flex;gap:40px;flex-wrap:wrap;margin-top:14px;}
+.tcol{display:flex;flex-direction:column;gap:10px;min-width:180px;}
+
+.navmenu-list{display:flex;flex-direction:column;}
+.navmenu-list .item{padding:10px 4px;border-bottom:1px solid var(--border);font-size:14.5px;}
+.navmenu-list .item:last-child{border-bottom:none;}
+
+.toast{position:fixed;left:50%;bottom:env(safe-area-inset-bottom, 24px);transform:translate(-50%,0);background:var(--accent);color:var(--accent-fg);padding:10px 18px;border-radius:999px;font-size:13.5px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s ease;z-index:20;}
+.toast.show{opacity:1;}
+
+[hidden]{display:none!important;}
+
+@media (max-width:760px){
+  .shell{flex-direction:column;}
+  .sidebar{width:100%;height:auto;position:static;border-right:none;border-bottom:1px solid var(--border);padding:14px;}
+  .navlist{flex-direction:row;overflow-x:auto;gap:6px;}
+  .navlist a{flex-shrink:0;}
+  .navlist a .fr{display:none;}
+  .main{padding-inline:16px;}
+}
+</style>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="name">Cosy Controller</div>
+      <div class="sub">FR reference <span class="fr">[Référence FR]</span></div>
+    </div>
+    <div class="navlist" id="navlist">
+      <a href="#home" data-target="home">Home <span class="fr">[Accueil]</span></a>
+      <a href="#nav-menu" data-target="nav-menu">Navigation menu <span class="fr">[Menu de navigation]</span></a>
+      <a href="#system-config" data-target="system-config">System Configuration <span class="fr">[Configuration du système]</span></a>
+      <a href="#setpoint" data-target="setpoint">Flow Temperature Setpoint <span class="fr">[Point de consigne de température]</span></a>
+      <a href="#link-sensor" data-target="link-sensor">Link Room Sensor <span class="fr">[Associer un capteur]</span></a>
+      <a href="#room-sensors" data-target="room-sensors">Room Sensors <span class="fr">[Capteurs de pièce]</span></a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="wrap">
+
+      <!-- ============ HOME ============ -->
+      <section id="home" class="page-section">
+        <p class="eyebrow">Screen 1 of 6</p>
+        <h1>Home<span class="fr-title">[Accueil]</span></h1>
+        <p class="lede">Status overview shown when the controller loads. Every label below carries its French translation in brackets.</p>
+
+        <div class="card">
+          <div class="card-body">
+            <dl class="kv">
+              <dt>Heat Pump Status <span class="fr">[État de la pompe à chaleur]</span></dt><dd>Machine Standby <span class="fr">[Machine en veille]</span></dd>
+              <dt>Date + Time <span class="fr">[Date + Heure]</span></dt><dd class="mono">05/10/2026 13:00:51</dd>
+              <dt>Heat Pump Consumption <span class="fr">[Consommation de la pompe à chaleur]</span></dt><dd class="mono">0 kW</dd>
+              <dt>External Air Temp <span class="fr">[Température d'air extérieur]</span></dt><dd class="mono">22.1°C</dd>
+              <dt>Flow Water Temp <span class="fr">[Température de l'eau de départ]</span></dt><dd class="mono">25.4°C</dd>
+              <dt>Return Water Temp <span class="fr">[Température de l'eau de retour]</span></dt><dd class="mono">24.8°C</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">Zones <span class="fr">[Zones]</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Zone<span class="fr">Zone</span></th>
+                <th>Mode<span class="fr">Mode</span></th>
+                <th>Setpoint<span class="fr">Point de consigne</span></th>
+                <th class="num">Temperature<span class="fr">Température</span></th>
+              </tr></thead>
+              <tbody>
+                <tr><td>WATER <span class="fr">[EAU]</span></td><td><select><option>Off</option><option>Heating</option><option>Boost</option></select> <span class="fr">[Arrêt]</span></td><td>—</td><td class="num mono">23.7°C</td></tr>
+                <tr><td>up <span class="fr">[haut]</span></td><td><select><option>Off</option><option>Heating</option><option>Boost</option></select> <span class="fr">[Arrêt]</span></td><td>—</td><td class="num mono">22.6°C</td></tr>
+                <tr><td>down <span class="fr">[bas]</span></td><td><select><option>Off</option><option>Heating</option><option>Boost</option></select> <span class="fr">[Arrêt]</span></td><td>—</td><td class="num mono">22.6°C</td></tr>
+                <tr><td>AUX <span class="fr">[AUX]</span></td><td><select><option>Off</option><option>Heating</option><option>Boost</option></select> <span class="fr">[Arrêt]</span></td><td>—</td><td class="num mono">0.0°C</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ NAV MENU ============ -->
+      <section id="nav-menu" class="page-section" hidden>
+        <p class="eyebrow">Screen 2 of 6</p>
+        <h1>Navigation menu<span class="fr-title">[Menu de navigation]</span></h1>
+        <p class="lede">The slide-out menu reached from the hamburger icon on every screen.</p>
+
+        <div class="card">
+          <div class="card-body navmenu-list">
+            <div class="item">Home <span class="fr">[Accueil]</span></div>
+            <div class="item">Cosy Pods <span class="fr">[Modules Cosy]</span></div>
+            <div class="item">System Configuration <span class="fr">[Configuration du système]</span></div>
+            <div class="item">Heat Pump Configuration <span class="fr">[Configuration de la pompe à chaleur]</span></div>
+            <div class="item">Heat Pump Serial <span class="fr">[Numéro de série de la pompe à chaleur]</span></div>
+            <div class="item">Setpoints <span class="fr">[Points de consigne]</span></div>
+            <div class="item">Manufacturing Settings <span class="fr">[Paramètres de fabrication]</span></div>
+            <div class="item">Performance Summary <span class="fr">[Résumé des performances]</span></div>
+            <div class="item">Manifold Data <span class="fr">[Données du collecteur]</span></div>
+            <div class="item">Heat Pump Data <span class="fr">[Données de la pompe à chaleur]</span></div>
+            <div class="item">Faults <span class="fr">[Défauts]</span></div>
+            <div class="item">Schedules <span class="fr">[Programmes]</span></div>
+            <div class="item">About <span class="fr">[À propos]</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SYSTEM CONFIG ============ -->
+      <section id="system-config" class="page-section" hidden>
+        <p class="eyebrow">Screen 3 of 6</p>
+        <h1>System Configuration<span class="fr-title">[Configuration du système]</span></h1>
+        <p class="lede">Zone setup, ADC sensor mapping, and manual pump control, all on one page in the real app.</p>
+
+        <div class="card">
+          <div class="card-head">Zones <span class="fr">[Zones]</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Name<span class="fr">Nom</span></th>
+                <th>Display Name<span class="fr">Nom affiché</span></th>
+                <th>Type<span class="fr">Type</span></th>
+                <th>Primary Sensor<span class="fr">Capteur principal</span></th>
+                <th>Enabled<span class="fr">Activé</span></th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td>DHW <span class="fr">[ECS]</span></td>
+                  <td><input type="text" value="WATER"></td>
+                  <td><select><option selected>Hot Water</option><option>Heating</option><option>Aux</option></select> <span class="fr">[Eau chaude]</span></td>
+                  <td><select><option selected>WATER - ADC1</option><option>ZONE1 - 001E5E0902AA4C37</option><option>ZONE2 - 001E5E0902AA4CF5</option><option>None</option></select></td>
+                  <td><input type="checkbox" checked></td>
+                </tr>
+                <tr>
+                  <td>Zone 1 <span class="fr">[Zone 1]</span></td>
+                  <td><input type="text" value="up"></td>
+                  <td><select><option>Hot Water</option><option selected>Heating</option><option>Aux</option></select> <span class="fr">[Chauffage]</span></td>
+                  <td><select><option>WATER - ADC1</option><option selected>ZONE1 - 001E5E0902AA4C37</option><option>ZONE2 - 001E5E0902AA4CF5</option><option>None</option></select></td>
+                  <td><input type="checkbox" checked></td>
+                </tr>
+                <tr>
+                  <td>Zone 2 <span class="fr">[Zone 2]</span></td>
+                  <td><input type="text" value="down"></td>
+                  <td><select><option>Hot Water</option><option selected>Heating</option><option>Aux</option></select> <span class="fr">[Chauffage]</span></td>
+                  <td><select><option>WATER - ADC1</option><option>ZONE1 - 001E5E0902AA4C37</option><option selected>ZONE2 - 001E5E0902AA4CF5</option><option>None</option></select></td>
+                  <td><input type="checkbox" checked></td>
+                </tr>
+                <tr>
+                  <td>Aux <span class="fr">[Aux]</span></td>
+                  <td><input type="text" value="AUX"></td>
+                  <td><select><option>Hot Water</option><option>Heating</option><option selected>Aux</option></select> <span class="fr">[Auxiliaire]</span></td>
+                  <td><select><option>None</option><option>WATER - ADC1</option><option>ZONE1 - 001E5E0902AA4C37</option><option>ZONE2 - 001E5E0902AA4CF5</option></select></td>
+                  <td><input type="checkbox"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-body hint">
+            <b>Note <span class="fr">[Remarque]</span>:</b> change to "Heating" <span class="fr">[« Chauffage »]</span> if zone 3 is required <span class="fr">[si la zone 3 est nécessaire]</span>.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">ADC sensors <span class="fr">[Capteurs ADC]</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Sensor ID<span class="fr">ID du capteur</span></th>
+                <th>Display Name<span class="fr">Nom affiché</span></th>
+                <th>Zone<span class="fr">Zone</span></th>
+                <th class="num">Temperature<span class="fr">Température</span></th>
+              </tr></thead>
+              <tbody>
+                <tr><td class="mono">ADC1</td><td><input type="text" value="ADC1"></td><td><select><option selected>WATER</option><option>up</option><option>down</option><option>AUX</option><option>Unassigned</option></select></td><td class="num mono">22.8°C</td></tr>
+                <tr><td class="mono">ADC2</td><td><input type="text" value="ADC2"></td><td><select><option>WATER</option><option selected>up</option><option>down</option><option>AUX</option><option>Unassigned</option></select></td><td class="num mono">-273.1°C</td></tr>
+                <tr><td class="mono">ADC3</td><td><input type="text" value="ADC3"></td><td><select><option>WATER</option><option>up</option><option selected>down</option><option>AUX</option><option>Unassigned</option></select></td><td class="num mono">-273.1°C</td></tr>
+                <tr><td class="mono">ADC4</td><td><input type="text" value="ADC4"></td><td><select><option selected>WATER</option><option>up</option><option>down</option><option>AUX</option><option>Unassigned</option></select></td><td class="num mono">-273.1°C</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">Manual Pump Control <span class="fr">[Contrôle manuel des pompes]</span></div>
+          <div class="card-body">
+            <div class="infobox">
+              <b>To control the pumps manually: <span class="fr">[Pour contrôler les pompes manuellement :]</span></b>
+              <ol>
+                <li>Bring heat pump status to <span class="chip">Standby <span class="fr" style="color:inherit;">[Veille]</span></span> by ensuring all zones are in <b>Off</b> mode <span class="fr">[Arrêt]</span>, and waiting a few minutes. <span class="fr">[Faites passer l'état de la pompe à chaleur en Veille en vous assurant que toutes les zones sont en mode Arrêt, puis attendez quelques minutes.]</span></li>
+                <li>You can then turn pumps on/off manually (pumps turn off automatically after 5 minutes). <span class="fr">[Vous pouvez ensuite allumer/éteindre les pompes manuellement — elles s'éteignent automatiquement après 5 minutes.]</span></li>
+              </ol>
+            </div>
+
+            <p style="margin:0 0 10px;font-size:13.5px;">Heat Pump status <span class="fr">[État de la pompe à chaleur]</span>: <span class="chip">Standby <span class="fr" style="color:inherit;">[Veille]</span></span></p>
+            <button class="btn btn-primary" style="margin-bottom:18px;">Set all Zones to Off mode <span class="fr" style="color:inherit;opacity:.85;">[Mettre toutes les zones en mode Arrêt]</span></button>
+
+            <div class="toggles">
+              <div class="tcol">
+                <label class="switchrow"><span class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></span>Primary pump <span class="fr">[Pompe principale]</span></label>
+                <label class="switchrow"><span class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></span>DHW pump enabled <span class="fr">[Pompe ECS activée]</span></label>
+                <label class="switchrow"><span class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></span>Zone 2 pump enabled <span class="fr">[Pompe Zone 2 activée]</span></label>
+              </div>
+              <div class="tcol">
+                <div class="switchrow">Pump speed <span class="fr">[Vitesse de la pompe]</span>: <input type="number" value="100" style="width:64px;"> %</div>
+                <label class="switchrow"><span class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></span>Zone 1 pump enabled <span class="fr">[Pompe Zone 1 activée]</span></label>
+                <label class="switchrow"><span class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></span>Aux pump enabled <span class="fr">[Pompe Aux activée]</span></label>
+              </div>
+              <div class="tcol">
+                <div class="switchrow">Primary flow rate <span class="fr">[Débit principal]</span>: <span class="mono">0.0 l/min</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SETPOINT ============ -->
+      <section id="setpoint" class="page-section" hidden>
+        <p class="eyebrow">Screen 4 of 6</p>
+        <h1>Heating Flow Temperature Setpoint<span class="fr-title">[Point de consigne de la température de départ du chauffage]</span></h1>
+        <p class="lede">Install-time notes are kept as yellow hints under the fields they refer to, so the commissioning guidance travels with the translation.</p>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="switchrow" style="margin-bottom:16px;">
+              <span class="switch"><input type="checkbox" id="wc-enable"><span class="track"></span><span class="thumb"></span></span>
+              Weather compensation enabled <span class="fr">[Compensation météo activée]</span>
+            </div>
+            <div class="note"><b>Enable <span class="fr">[Activer]</span></b> — turn this on before setting the weather-compensated fields below. <span class="fr">[Activez ce réglage avant de renseigner les champs compensés ci-dessous.]</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <dl class="kv">
+              <dt>Target flow temperature <span class="fr">[Température de départ cible]</span></dt>
+              <dd><input type="text" value="50" style="max-width:120px;"> °C</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <dl class="kv">
+              <dt>Weather compensated maximum flow temperature <span class="fr">[Température de départ maximale compensée selon la météo]</span></dt>
+              <dd><input type="text" value="57" style="max-width:120px;"> °C</dd>
+
+              <dt>Weather compensated minimum flow temperature <span class="fr">[Température de départ minimale compensée selon la météo]</span></dt>
+              <dd><input type="text" value="37" style="max-width:120px;"> °C</dd>
+
+              <dt>Weather compensated high external temperature <span class="fr">[Température extérieure haute compensée selon la météo]</span></dt>
+              <dd><input type="text" value="12" style="max-width:120px;"> °C</dd>
+
+              <dt>Weather compensated low external temperature <span class="fr">[Température extérieure basse compensée selon la météo]</span></dt>
+              <dd><input type="text" value="-10" style="max-width:120px;"> °C</dd>
+            </dl>
+            <div class="note">
+              <b>Set according to design schedule <span class="fr">[Régler selon le barème de conception]</span></b> — applies to the minimum and high-external fields above. <span class="fr">[S'applique aux champs minimale et haute externe ci-dessus.]</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+            <span style="font-size:13.5px;">Reset all flow temps to defaults <span class="fr">[Réinitialiser toutes les températures de départ aux valeurs par défaut]</span></span>
+            <button class="btn btn-primary">Reset Flow Temps <span class="fr" style="color:inherit;opacity:.85;">[Réinitialiser]</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ LINK ROOM SENSOR ============ -->
+      <section id="link-sensor" class="page-section" hidden>
+        <p class="eyebrow">Screen 5 of 6</p>
+        <h1>Link Room Sensor<span class="fr-title">[Associer un capteur de pièce]</span></h1>
+        <p class="lede">The pairing form for a Cosy Pod. Install-time guidance is shown as hint text under each field.</p>
+
+        <div class="card">
+          <div class="card-body" style="display:flex;flex-direction:column;gap:16px;max-width:520px;">
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Install Code <span class="fr">[Code d'installation]</span></label>
+              <input type="text" value="AAAAAAAAAAAAAAAA" class="mono">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">EUI</label>
+              <input type="text" value="123456789" class="mono">
+              <div class="hint">Unique ID of Cosy Pod <span class="fr">[Identifiant unique du Cosy Pod]</span></div>
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Zone <span class="fr">[Zone]</span></label>
+              <select>
+                <option selected>ZONE1</option>
+                <option>ZONE2</option>
+                <option>AUX</option>
+              </select>
+              <div class="hint">Heating Zone the Cosy Pod will be assigned to. If you have set up more than one heating zone, choose the zone the Pod should be assigned to. <span class="fr">[Zone de chauffage à laquelle le Cosy Pod sera associé. Si vous avez configuré plusieurs zones de chauffage, choisissez la zone à laquelle le Pod doit être associé.]</span></div>
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Name <span class="fr">[Nom]</span></label>
+              <input type="text" value="Lounge">
+              <div class="hint">Name of the room the Pod has been installed in <span class="fr">[Nom de la pièce dans laquelle le Pod a été installé]</span> — e.g. "Lounge" <span class="fr">[« Salon »]</span>.</div>
+            </div>
+            <button class="btn btn-primary">Submit <span class="fr" style="color:inherit;opacity:.85;">[Soumettre]</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ROOM SENSORS ============ -->
+      <section id="room-sensors" class="page-section" hidden>
+        <p class="eyebrow">Screen 6 of 6</p>
+        <h1>Room Sensors<span class="fr-title">[Capteurs de pièce]</span></h1>
+        <p class="lede">The Zone field here is a working dropdown with the full option list. Try removing a row or adding one.</p>
+
+        <div class="card">
+          <div class="card-head" style="display:flex;justify-content:space-between;align-items:baseline;">
+            <span>Zigbee sensors <span class="fr">[Capteurs Zigbee]</span></span>
+            <span id="rsCount" style="font-weight:400;color:var(--fg-muted);font-size:12.5px;"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>EUI64</th>
+                <th>Sensor display Name<span class="fr">Nom affiché du capteur</span></th>
+                <th>Zone<span class="fr">Zone</span></th>
+                <th>Online<span class="fr">En ligne</span></th>
+                <th class="num">Batt (V)<span class="fr">Batterie (V)</span></th>
+                <th class="num">RSSI (dBm)<span class="fr">RSSI (dBm)</span></th>
+                <th class="num">Temp (C)<span class="fr">Température (C)</span></th>
+                <th>Remove<span class="fr">Supprimer</span></th>
+              </tr></thead>
+              <tbody id="rsBody"></tbody>
+            </table>
+          </div>
+          <div class="card-body" style="padding-top:12px;">
+            <button class="btn btn-primary" id="rsAddBtn">+ Add room sensor <span class="fr" style="color:inherit;opacity:.85;">[Ajouter un capteur de pièce]</span></button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  /* ---------- router ---------- */
+  var sections = Array.prototype.slice.call(document.querySelectorAll(".page-section"));
+  var links = Array.prototype.slice.call(document.querySelectorAll("#navlist a"));
+  var validIds = sections.map(function(s){ return s.id; });
+
+  function show(id){
+    if(validIds.indexOf(id) === -1) id = "home";
+    sections.forEach(function(s){ s.hidden = (s.id !== id); });
+    links.forEach(function(a){ a.classList.toggle("active", a.getAttribute("data-target") === id); });
+  }
+
+  links.forEach(function(a){
+    a.addEventListener("click", function(e){
+      e.preventDefault();
+      var id = a.getAttribute("data-target");
+      history.replaceState(null, "", "#" + id);
+      show(id);
+      window.scrollTo({top:0, behavior:"instant"});
+    });
+  });
+
+  window.addEventListener("hashchange", function(){
+    show(location.hash.replace("#",""));
+  });
+
+  show(location.hash.replace("#","") || "home");
+
+  /* ---------- toast ---------- */
+  var toast = document.getElementById("toast");
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ toast.classList.remove("show"); }, 1800);
+  }
+
+  /* ---------- room sensors table ---------- */
+  var ZONE_OPTIONS = [
+    {value:"ZONE1", label:"ZONE1"},
+    {value:"ZONE2", label:"ZONE2"},
+    {value:"AUX", label:"AUX"},
+    {value:"", label:"Unassigned"}
+  ];
+  var rsData = [
+    {id:1, eui:"001E5E090290305E", name:"POD1", zone:"ZONE1", online:true,  batt:"2.8", rssi:"-24", temp:"23.0"},
+    {id:2, eui:"001E5E090290302D", name:"POD2", zone:"ZONE2", online:false, batt:"2.8", rssi:"-26", temp:"23.3"},
+    {id:3, eui:"001E5E090290305D", name:"POD3", zone:"ZONE1", online:true,  batt:"2.9", rssi:"-30", temp:"23.3"}
+  ];
+  var rsNextId = 4;
+  var rsBody = document.getElementById("rsBody");
+  var rsCount = document.getElementById("rsCount");
+
+  function zoneSelectHTML(id, selected){
+    var out = '<select data-rszone="' + id + '">';
+    ZONE_OPTIONS.forEach(function(opt){
+      out += '<option value="' + opt.value + '"' + (opt.value === selected ? ' selected' : '') + '>' + opt.label + '</option>';
+    });
+    out += '</select>';
+    return out;
+  }
+
+  function rsRender(){
+    rsBody.innerHTML = "";
+    rsData.forEach(function(row){
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td class="mono">' + row.eui + '</td>' +
+        '<td><input type="text" data-rsname="' + row.id + '" value="' + row.name + '" placeholder="Sensor name / Nom du capteur"></td>' +
+        '<td>' + zoneSelectHTML(row.id, row.zone) + '</td>' +
+        '<td><span class="status"><span class="dot ' + (row.online ? 'good' : 'bad') + '"></span>' + (row.online ? 'Yes' : 'No') + ' <span class="fr">[' + (row.online ? 'Oui' : 'Non') + ']</span></span></td>' +
+        '<td class="num mono">' + row.batt + '</td>' +
+        '<td class="num mono">' + row.rssi + '</td>' +
+        '<td class="num mono">' + row.temp + '</td>' +
+        '<td><button class="btn" data-rsremove="' + row.id + '">Remove <span class="fr">[Supprimer]</span></button></td>';
+      rsBody.appendChild(tr);
+    });
+    rsCount.textContent = rsData.length + (rsData.length === 1 ? " sensor" : " sensors") +
+      " [" + rsData.length + (rsData.length === 1 ? " capteur" : " capteurs") + "]";
+  }
+
+  rsBody.addEventListener("click", function(e){
+    var btn = e.target.closest("[data-rsremove]");
+    if(!btn) return;
+    var id = Number(btn.getAttribute("data-rsremove"));
+    rsData = rsData.filter(function(r){ return r.id !== id; });
+    rsRender();
+    showToast("Sensor removed · Capteur supprimé");
+  });
+
+  rsBody.addEventListener("change", function(e){
+    if(e.target.matches("[data-rszone]")){
+      var id = Number(e.target.getAttribute("data-rszone"));
+      var row = rsData.find(function(r){ return r.id === id; });
+      if(row) row.zone = e.target.value;
+    }
+  });
+
+  rsBody.addEventListener("input", function(e){
+    if(e.target.matches("[data-rsname]")){
+      var id = Number(e.target.getAttribute("data-rsname"));
+      var row = rsData.find(function(r){ return r.id === id; });
+      if(row) row.name = e.target.value;
+    }
+  });
+
+  document.getElementById("rsAddBtn").addEventListener("click", function(){
+    rsData.push({id:rsNextId, eui:"— awaiting pairing —", name:"", zone:"", online:false, batt:"–", rssi:"–", temp:"–"});
+    rsNextId++;
+    rsRender();
+    var lastInput = rsBody.querySelector("tr:last-child input[type=text]");
+    if(lastInput) lastInput.focus();
+    showToast("Row added · Ligne ajoutée");
+  });
+
+  rsRender();
+})();
+</script>
+
+</body></html>
