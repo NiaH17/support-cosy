@@ -182,14 +182,14 @@ const R290_SAFETY = [
 // ── Cosy Hub LEDs ─────────────────────────────────────────────────────────────
 
 const LED_STATES = [
-  { state: 'Violet clignotant', meaning: 'Démarrage / initialisation' },
-  { state: 'Bleu clignotant', meaning: "Connexion au Wi-Fi en cours" },
-  { state: 'Bleu fixe', meaning: "Connecté au Wi-Fi, en attente de couplage avec la pompe à chaleur" },
-  { state: 'Jaune clignotant', meaning: "Mise à jour du firmware en cours — ne pas couper l'alimentation" },
-  { state: 'Blanc fixe', meaning: 'Fonctionnement normal — tout est OK' },
-  { state: 'Jaune fixe', meaning: "Connecté mais pas de demande de chaleur active" },
-  { state: 'Rouge fixe', meaning: "Erreur — voir codes d'erreur dans l'application ou la section Dépannage" },
-  { state: 'Rouge clignotant', meaning: "Erreur critique — cycle d'alimentation recommandé. Contacter le support si persistant." },
+  { state: 'Violet clignotant', meaning: 'Démarrage' },
+  { state: 'Bleu clignotant', meaning: "Bluetooth activé (prêt à être couplé à l'application Octopus Energy)" },
+  { state: 'Bleu fixe', meaning: "Wi-Fi activé (prêt à se connecter au site installateur)" },
+  { state: 'Jaune clignotant', meaning: 'Zigbee activé (prêt à se connecter aux pods Cosy)' },
+  { state: 'Blanc fixe', meaning: 'Connecté / en ligne' },
+  { state: 'Jaune fixe', meaning: 'Connexion Wi-Fi perdue' },
+  { state: 'Rouge fixe', meaning: 'Aucun pod principal' },
+  { state: 'Rouge clignotant', meaning: 'La pompe à chaleur Cosy présente un défaut' },
 ]
 
 // ── Commissioning ─────────────────────────────────────────────────────────────
