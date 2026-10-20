@@ -229,7 +229,7 @@ const COMMISSIONING_GUIDES = {
     steps: [
       { step: 1, title: 'Retirer la pile du pod', detail: 'Retirer la pile du pod.' },
       { step: 2, title: 'Maintenir le bouton et réinsérer la pile', detail: 'Maintenir le bouton enfoncé tout en réinsérant la pile.' },
-      { step: 3, title: 'Maintenir jusqu\'à l\'apparition du voyant rouge', detail: 'Continuer à maintenir le bouton jusqu\'à l\'apparition du voyant rouge. Le pod est maintenant réinitialisé et peut être couplé à nouveau.' },
+      { step: 3, title: "Maintenir jusqu'à ce que le voyant rouge cesse de clignoter", detail: "Continuer à maintenir le bouton enfoncé jusqu'à ce que le voyant rouge cesse de clignoter, puis relâcher. Le pod clignote en violet : il est maintenant réinitialisé et peut être couplé à nouveau." },
     ],
     note: "Si le pod reste bloqué en mode couplage après la réinitialisation, la cause probable est une interférence d'un autre appareil Zigbee (ex. ampoules Philips Hue). Si une interférence est suspectée : (1) couper l'alimentation de tous les autres appareils possibles, (2) tenter de coupler les pods à nouveau, (3) si toujours bloqué, réinitialiser comme ci-dessus, (4) retirer le hub et les pods du logement et tenter le couplage avec le hub alimenté séparément hors du logement.",
     escalate: true,
