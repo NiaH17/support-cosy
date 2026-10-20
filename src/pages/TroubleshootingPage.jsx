@@ -100,7 +100,7 @@ const INVERTER_GUIDE = {
     { step: 1, title: 'Vérifier la continuité du câble Modbus', detail: "Vérifier la continuité du câble Modbus entre l'unité et le hub." },
     { step: 2, title: "Vérifier le Modbus à l'onduleur", detail: "Confirmer que le câble Modbus entrant dans l'onduleur est bien serré dans les bornes et que les conducteurs sont dans les embouts." },
     { step: 3, title: 'Vérifier les voyants de la carte CA', detail: "Confirmer que les voyants de la carte CA sont allumés. Sinon, contrôler l'alimentation de la carte." },
-    { step: 4, title: "Tester l'onduleur", detail: "Vérifier la tension d'alimentation et les tensions de sortie de l'onduleur." },
+    { step: 4, title: "Vérifier les tensions de l'onduleur", detail: "Vérifier que la tension d'alimentation de l'onduleur est correcte et que les tensions de sortie vers le compresseur et la bobine d'arrêt (Cosy 6 et 9) sont équilibrées." },
     { step: 5, title: 'Vérifier la vanne V4', detail: "Vérifier l'emboîtement et la bobine de la vanne V4." },
   ],
   escalate: true,
