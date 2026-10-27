@@ -181,7 +181,7 @@ const GUIDES = {
       { step: 2, title: 'Vérifier le capteur NTC T10', detail: "Confirmer que le capteur NTC T10 est correctement emboîté à son point de terminaison sur l'onduleur." },
       { step: 3, title: 'Tester la résistance du capteur NTC T10', detail: "Retirer le capteur T10 et tester la résistance entre les deux câbles T10. Utiliser le tableau de résistances pour vérifier que les valeurs correspondent à la température actuelle au niveau du capteur." },
       { step: 4, title: 'Vérifier le bornier', detail: "Confirmer que le bornier est correctement emboîté dans l'onduleur et que la fiche verte est entièrement insérée." },
-      { step: 5, title: 'Vérifier la vanne V1', detail: "Confirmer que la vanne V1 est correctement emboîtée." },
+      { step: 5, title: "Vérifier l'emboîtement de la vanne V1", detail: "Cette vérification se fait en soulevant le couvercle de l'unité, mais nécessite une carte CA v1.6 (contacter l'équipe Cosy pour la procédure)." },
     ],
     note: "Après le test du capteur T10, rebrancher les câbles dans la fiche verte de l'onduleur et s'assurer qu'elle est entièrement insérée. Si des valeurs sont anormales, contacter l'équipe Cosy.",
     escalate: true,
