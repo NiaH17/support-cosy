@@ -107,19 +107,16 @@ const INVERTER_GUIDE = {
 }
 
 const GUIDES = {
-  'Débit faible ou bloqué': {
+    'Débit faible ou bloqué': {
     causes: [
-      'Filtres bouchés ou air dans le circuit',
-      "Le ballon tampon et la pompe de circulation ont été raccordés ou câblés incorrectement",
-      "Évaporateur bloqué ou encrassé",
+      'Filtre et tamis bouchés',
+      "Air dans le circuit",
+      'Restrictions dans le circuit',
     ],
     steps: [
-      { step: 1, title: "Vérifier l'évaporateur", detail: "Vérifier que l'évaporateur n'est pas bloqué. S'il est gelé, le dégivrer en versant de l'eau directement sur l'évaporateur." },
-      { step: 2, title: 'Vérifier les obstructions', detail: "Si des arbustes ont poussé ou si des objets ont été placés près de l'évaporateur, les dégager pour rétablir un flux d'air correct." },
-      { step: 3, title: "Effectuer une purge d'air", detail: "S'assurer qu'il n'y a pas de poche d'air dans les canalisations en hauteur. Suivre la procédure de purge d'air." },
-      { step: 4, title: 'Vérifier tous les filtres', detail: "Vérifier le filtre à l'avant de l'unité et le tamis du filtre magnétique — nettoyer si bloqué." },
-      { step: 5, title: 'Vérifier toutes les vannes', detail: 'Confirmer que toutes les vannes et radiateurs sont entièrement ouverts.' },
-      { step: 6, title: 'Mode AP — augmenter la vitesse de la pompe', detail: "Si l'erreur persiste, passer en mode AP et régler la vitesse de la pompe à 100% pour chasser l'air résiduel du circuit.", images: [ { src: '/images/troubleshooting/upm4xxl-pump.png', caption: "Pompe Grundfos UPM4XXL" } ] },
+      { step: 1, title: 'Vérifier tous les filtres', detail: "Vérifier que tous les filtres sont propres, y compris celui à l'avant de l'unité et le tamis du filtre magnétique." },
+      { step: 2, title: "Effectuer une purge d'air en mode AP", detail: "S'assurer qu'il n'y a pas de blocage d'air dans les canalisations en hauteur." },
+      { step: 3, title: 'Vérifier les vannes et radiateurs', detail: 'Vérifier que toutes les vannes et tous les radiateurs sont entièrement ouverts.' },
     ],
     note: "Si la purge d'air est impossible car la panne est active, effectuer un cycle d'alimentation de la pompe à chaleur depuis l'isolateur. Attendre quelques minutes, remettre sous tension, puis effectuer immédiatement une purge d'air via le mode AP.",
     escalate: true,
