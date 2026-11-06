@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ImageRow } from '../components/GuideImages'
-import { POD_RESET_STEPS } from '../lib/podReset'
 
 // ── Unit specs (source: Manuel d'installation FRV1, section 7) ──────────────────
 
@@ -183,14 +182,14 @@ const R290_SAFETY = [
 // ── Cosy Hub LEDs ─────────────────────────────────────────────────────────────
 
 const LED_STATES = [
-  { state: 'Violet clignotant', meaning: 'Démarrage / initialisation' },
-  { state: 'Bleu clignotant', meaning: "Connexion au Wi-Fi en cours" },
-  { state: 'Bleu fixe', meaning: "Connecté au Wi-Fi, en attente de couplage avec la pompe à chaleur" },
-  { state: 'Jaune clignotant', meaning: "Mise à jour du firmware en cours — ne pas couper l'alimentation" },
-  { state: 'Blanc fixe', meaning: 'Fonctionnement normal — tout est OK' },
-  { state: 'Jaune fixe', meaning: "Connecté mais pas de demande de chaleur active" },
-  { state: 'Rouge fixe', meaning: "Erreur — voir codes d'erreur dans l'application ou la section Dépannage" },
-  { state: 'Rouge clignotant', meaning: "Erreur critique — cycle d'alimentation recommandé. Contacter le support si persistant." },
+  { state: 'Violet clignotant', meaning: 'Démarrage' },
+  { state: 'Bleu clignotant', meaning: "Bluetooth activé (prêt à être couplé à l'application Octopus Energy)" },
+  { state: 'Bleu fixe', meaning: "Wi-Fi activé (prêt à se connecter au site installateur)" },
+  { state: 'Jaune clignotant', meaning: 'Zigbee activé (prêt à se connecter aux pods Cosy)' },
+  { state: 'Blanc fixe', meaning: 'Connecté / en ligne' },
+  { state: 'Jaune fixe', meaning: 'Connexion Wi-Fi perdue' },
+  { state: 'Rouge fixe', meaning: 'Aucun pod principal' },
+  { state: 'Rouge clignotant', meaning: 'La pompe à chaleur Cosy présente un défaut' },
 ]
 
 // ── Commissioning ─────────────────────────────────────────────────────────────
@@ -212,27 +211,35 @@ const COMMISSIONING_SECTIONS = [
       { step: 4, title: 'Affecter les pods aux zones', detail: "Pour chaque zone active, affecter le(s) pod(s) de thermostat correspondant(s)." },
     ],
   },
-  {
+    {
     id: 'flow-temps',
     title: 'Températures de départ',
     steps: [
-      { step: 1, title: 'Identifier le type d\'émetteurs', detail: "Plancher chauffant basse température : consigne 35–42°C. Radiateurs basse température : consigne 45–50°C. Radiateurs traditionnels : consigne 55–60°C." },
-      { step: 2, title: 'Régler la consigne de départ max', detail: "Dans l'application, aller dans Paramètres → Paramètres système → Températures de départ. Régler la température max de départ selon le type d'émetteur." },
-      { step: 3, title: 'Activer la loi d\'eau si disponible', detail: "Si le mode loi d'eau est disponible, l'activer et régler les points de consigne selon la documentation technique." },
-      { step: 4, title: 'Vérifier les températures de départ/retour en fonctionnement', detail: "Lors d'un appel de chaleur, vérifier les températures de départ et retour sur le hub. L'écart normal est de 5 à 10°C." },
+      { step: 1, title: 'Ouvrir la page des points de consigne', detail: "Appuyer sur le bouton menu en haut à gauche, puis aller à la page « Points de consigne » (Setpoints)." },
+      { step: 2, title: 'Activer la loi d\'eau', detail: "Activer la compensation météo (Weather Compensation)." },
+      { step: 3, title: 'Régler les températures de départ maximales', detail: "Régler la température de départ cible et la température de départ maximale en loi d'eau sur la température de départ de conception." },
+      { step: 4, title: 'Régler la température de départ minimale', detail: "Régler la température de départ minimale en loi d'eau sur 36 °C." },
+      { step: 5, title: 'Laisser la température extérieure haute', detail: "Laisser la température extérieure haute en loi d'eau à 12 °C." },
+      { step: 6, title: 'Régler la température extérieure basse', detail: "Régler la température extérieure basse en loi d'eau sur la température extérieure utilisée dans le calcul de conception." },
     ],
+    note: "La température de l'eau chaude sanitaire n'est pas réglée lors de la mise en service. La température et la programmation de l'eau chaude se règlent via les commandes de l'application Octopus pour le système Cosy.",
   },
-  {
+    {
     id: 'pods',
     title: 'Couplage des pods',
     steps: [
-      { step: 1, title: 'Pré-installer les pods', detail: "Fixer le pod thermostat dans chaque zone à environ 1,5 m du sol, loin des sources de chaleur et de lumière directe." },
-      { step: 2, title: 'Insérer les piles', detail: "Insérer 2 piles AA dans chaque pod (type inclus dans la boîte)." },
-      { step: 3, title: 'Démarrer le mode couplage dans l\'application', detail: "Dans l'application : Paramètres → Appareils → Ajouter un pod. Le hub passe en mode couplage." },
-      { step: 4, title: 'Déclencher le couplage sur le pod', detail: "Appuyer brièvement sur le bouton du pod — le voyant clignote pour confirmer le couplage." },
-      { step: 5, title: 'Vérifier et nommer', detail: "Une fois couplé, attribuer la pièce/zone dans l'application. Répéter pour chaque pod." },
+      { step: 1, title: 'Vérifier le mode AP du hub', detail: "S'assurer que le mode Wi-Fi AP du Cosy Hub est activé (le voyant d'état est bleu fixe)." },
+      { step: 2, title: 'Retirer la languette de la pile', detail: "Retirer la languette de la pile du pod Cosy et attendre que le voyant d'état du pod clignote en violet." },
+      { step: 3, title: 'Scanner le QR code', detail: "Scanner le QR code au dos du pod Cosy avec la tablette ou le téléphone. Le premier pod Cosy scanné devient le pod principal de la zone." },
+      { step: 4, title: 'Page « Associer le capteur de pièce »', detail: "Le scan ouvre automatiquement la page « Associer le capteur de pièce » (Link room sensor) sur le site installateur." },
+      { step: 5, title: 'Affecter le pod à une zone', detail: "S'il y a plus d'une zone de chauffage, le pod doit être affecté à une zone." },
+      { step: 6, title: 'Nommer le pod', detail: "Nommer le pod Cosy selon la pièce où il sera installé (par exemple « Salon »)." },
+      { step: 7, title: 'Fixer le pod', detail: "Fixer le pod sur la plaque murale montée." },
+      { step: 8, title: 'Répéter pour les autres pods', detail: "Répéter les étapes ci-dessus pour configurer les autres pods Cosy." },
+      { step: 9, title: 'Vérifier la liste des pods', detail: "Utiliser le menu pour aller à la page « Pods » et vérifier que tous les pods Cosy sont correctement listés." },
+      { step: 10, title: 'Changer le pod principal si nécessaire', detail: "Si le pod principal doit être changé, aller à la page « Configuration du système » et sélectionner le capteur dans la liste déroulante « Capteur principal » (Primary Sensor)." },
     ],
-    note: "Si le pod ne se couple pas, voir la section Dépannage → Problèmes de mise en service → Pod ne se couple pas.",
+    note: "REMARQUE : chaque zone doit avoir au moins un pod. ATTENTION : les équipements Zigbee utilisant des réseaux à accès ouvert (par ex. les ampoules Philips Hue) peuvent empêcher le couplage. Éteindre tous les appareils sans fil / connectés du logement et retenter le couplage si une interférence est suspectée.",
     link: { label: 'Aller vers le dépannage', path: '/depannage' },
   },
 ]
@@ -259,18 +266,29 @@ const PROCEDURES = [
     title: 'Réinitialisation des pods',
     category: 'Configuration',
     description: 'À effectuer si les pods ne répondent pas ou doivent être couplés à nouveau.',
-    steps: POD_RESET_STEPS.map((detail, i) => ({ step: i + 1, title: null, detail })),
+    steps: [
+      { step: 1, title: 'Supprimer tous les pods', detail: "Aller à la page « Pods » en mode installateur AP et supprimer tous les pods (les boutons de suppression sont tout à droite ; il faudra peut-être faire défiler la page horizontalement pour les voir)." },
+      { step: 2, title: 'Identifier les pods à réinitialiser', detail: "Réinitialiser tous les pods qui ne clignotent pas en violet, comme décrit dans les étapes suivantes." },
+      { step: 3, title: 'Retirer les piles', detail: "Retirer les piles du pod." },
+      { step: 4, title: 'Maintenir le bouton boost et réinsérer les piles', detail: "Maintenir le bouton boost enfoncé et réinsérer les piles (tout en continuant à maintenir le bouton boost enfoncé)." },
+      { step: 5, title: "Attendre l'arrêt du clignotement rouge", detail: "Attendre que le voyant rouge du pod cesse de clignoter (cela peut prendre environ 15 secondes). Le voyant devient ensuite violet et clignote." },
+      { step: 6, title: 'Recoupler le pod', detail: "Recoupler le pod en suivant la procédure décrite dans « Couplage des pods »." },
+    ],
   },
-  {
+    {
     id: 'zigbee-reset',
     title: 'Réinitialisation Zigbee',
     category: 'Configuration',
-    description: "Supprime tous les pods couplés au hub. À utiliser en cas d'appareils fantômes ou de problème de réseau Zigbee.",
+    description: "Zigbee est le type de connexion utilisé par les pods Cosy pour transmettre les données au Cosy Hub. Si plusieurs tentatives de couplage des pods Cosy échouent, une réinitialisation Zigbee peut être nécessaire pour effacer l'historique. Le code fabricant est nécessaire pour effectuer cette procédure. Pour l'obtenir, soumettre une demande d'assistance technique. Ce code est différent pour chaque unité.",
     steps: [
-      { step: 1, title: 'Accéder aux paramètres hub', detail: "Dans l'application installateur : Paramètres → Appareils → Paramètres du hub." },
-      { step: 2, title: 'Lancer la réinitialisation Zigbee', detail: "Sélectionner « Réinitialisation Zigbee » et confirmer. Le hub supprime tous les appareils couplés." },
-      { step: 3, title: 'Attendre la fin', detail: "Le hub redémarre le réseau Zigbee. Attendre 2 minutes." },
-      { step: 4, title: 'Recoupler tous les pods', detail: "Suivre la procédure de couplage des pods pour recoupler chaque pod un par un." },
+      { step: 1, title: 'Entrer en mode installateur AP', detail: "Passer en mode AP (point d'accès), c'est-à-dire en mode installateur." },
+      { step: 2, title: 'Se connecter au site AP', detail: "Se connecter au site web du point d'accès (AP)." },
+      { step: 3, title: 'Aller à la page des pods', detail: "Aller à la page des pods Cosy." },
+      { step: 4, title: 'Supprimer tous les pods', detail: "Supprimer tous les pods Cosy du système." },
+      { step: 5, title: 'Saisir le code fabricant', detail: "Aller dans le paramètre de fabrication et saisir le code fabricant." },
+      { step: 6, title: 'Sélectionner « Factory Reset Zigbee »', detail: "Sélectionner « Factory Reset Zigbee ». Remarque : ne pas sélectionner « Factory Restore » ni aucune autre option de cette page." },
+      { step: 7, title: 'Vérifier le clignotement violet', detail: "Vérifier que tous les pods Cosy clignotent en violet. Sinon, effectuer une réinitialisation du pod (voir la section « Réinitialisation des pods »)." },
+      { step: 8, title: 'Recoupler les pods', detail: "Recoupler les pods normalement." },
     ],
     warning: "⚠️ Cette action supprime tous les pods couplés. Vous devrez recoupler chaque appareil.",
   },
@@ -294,7 +312,7 @@ const PROCEDURES = [
       { step: 12, title: "Purger l'air du circuit", detail: "Purger le circuit en suivant la procédure de purge d'air.", link: { label: "Ouvrir la procédure de purge d'air", procedure: 'purge-air' } },
     ],
   },
-  {
+    {
     id: 'secondary-pump',
     title: 'Réglage de la pompe secondaire',
     category: 'Configuration',

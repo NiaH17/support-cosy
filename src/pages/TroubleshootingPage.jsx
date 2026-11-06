@@ -102,7 +102,7 @@ const INVERTER_GUIDE = {
     { step: 1, title: 'Vérifier la continuité du câble Modbus', detail: "Vérifier la continuité du câble Modbus entre l'unité et le hub." },
     { step: 2, title: "Vérifier le Modbus à l'onduleur", detail: "Confirmer que le câble Modbus entrant dans l'onduleur est bien serré dans les bornes et que les conducteurs sont dans les embouts." },
     { step: 3, title: 'Vérifier les voyants de la carte CA', detail: "Confirmer que les voyants de la carte CA sont allumés. Sinon, contrôler l'alimentation de la carte." },
-    { step: 4, title: "Tester l'onduleur", detail: "Vérifier la tension d'alimentation et les tensions de sortie de l'onduleur." },
+    { step: 4, title: "Tester l'onduleur", detail: "Vérifier que la tension d'alimentation de l'onduleur est correcte et que les tensions de sortie vers le compresseur et la bobine d'arrêt (Cosy 6 et 9) sont équilibrées." },
     { step: 5, title: 'Vérifier la vanne V4', detail: "Vérifier l'emboîtement et la bobine de la vanne V4." },
   ],
   testButton: { label: "Tester l'onduleur", path: '/depannage/test-onduleur' },
@@ -110,19 +110,17 @@ const INVERTER_GUIDE = {
 }
 
 const GUIDES = {
-  'Débit faible ou bloqué': {
+    'Débit faible ou bloqué': {
     causes: [
-      'Filtres bouchés ou air dans le circuit',
-      "Le ballon tampon et la pompe de circulation ont été raccordés ou câblés incorrectement",
-      "Évaporateur bloqué ou encrassé",
+      'Filtre et tamis bouchés',
+      "Air dans le circuit",
+      'Restrictions dans le circuit',
     ],
     steps: [
-      { step: 1, title: "Vérifier l'évaporateur", detail: "Vérifier que l'évaporateur n'est pas bloqué. S'il est gelé, le dégivrer en versant de l'eau directement sur l'évaporateur." },
-      { step: 2, title: 'Vérifier les obstructions', detail: "Si des arbustes ont poussé ou si des objets ont été placés près de l'évaporateur, les dégager pour rétablir un flux d'air correct." },
-      { step: 3, title: "Effectuer une purge d'air", detail: "Effectuer une purge d'air en mode AP, en s'assurant qu'il n'y a pas de poche d'air dans les canalisations en hauteur. Suivre la procédure de purge d'air.", link: { label: "Ouvrir la procédure de purge d'air", procedure: 'purge-air' } },
-      { step: 4, title: 'Vérifier tous les filtres', detail: "Vérifier le filtre à l'avant de l'unité et le tamis du filtre magnétique — nettoyer si bloqué." },
-      { step: 5, title: 'Vérifier toutes les vannes', detail: 'Confirmer que toutes les vannes et radiateurs sont entièrement ouverts.' },
-      { step: 6, title: 'Mode AP — augmenter la vitesse de la pompe', detail: "Si l'erreur persiste, passer en mode AP et régler la vitesse de la pompe à 100% pour chasser l'air résiduel du circuit.", images: [ { src: '/images/troubleshooting/upm4xxl-pump.png', caption: "Pompe Grundfos UPM4XXL" } ] },
+      { step: 1, title: 'Vérifier tous les filtres', detail: "Vérifier que tous les filtres sont propres, y compris celui à l'avant de l'unité et le tamis du filtre magnétique." },
+      { step: 2, title: "Effectuer une purge d'air en mode AP", detail: "S'assurer qu'il n'y a pas de blocage d'air dans les canalisations en hauteur. Suivre la procédure de purge d'air.", link: { label: "Ouvrir la procédure de purge d'air", procedure: 'purge-air' } },
+      { step: 3, title: 'Vérifier les vannes et radiateurs', detail: 'Vérifier que toutes les vannes et tous les radiateurs sont entièrement ouverts.' },
+      { step: 4, title: 'Mode AP — augmenter la vitesse de la pompe', detail: "Si l'erreur persiste, passer en mode AP et régler la vitesse de la pompe à 100% pour chasser l'air résiduel du circuit.", images: [ { src: '/images/troubleshooting/upm4xxl-pump.png', caption: "Pompe Grundfos UPM4XXL" } ] },
     ],
     note: "Si la purge d'air est impossible car la panne est active, effectuer un cycle d'alimentation de la pompe à chaleur depuis l'isolateur. Attendre quelques minutes, remettre sous tension, puis effectuer immédiatement une purge d'air via le mode AP.",
     escalate: true,
@@ -168,7 +166,7 @@ const GUIDES = {
     steps: [
       { step: 1, title: "Cycle d'alimentation de l'unité", detail: "Éteindre et rallumer l'unité. Écouter un clic après l'extinction pour confirmer l'arrêt complet." },
       { step: 2, title: "Vérifier la tension d'alimentation", detail: "Confirmer la présence de 230V aux bornes d'alimentation principale de la pompe à chaleur." },
-      { step: 3, title: "Vérifier les tensions de l'onduleur", detail: "Confirmer les tensions correctes sur l'entraînement de l'onduleur." },
+      { step: 3, title: "Vérifier les tensions de l'onduleur", detail: "Vérifier que la tension d'alimentation de l'onduleur est correcte et que les tensions de sortie vers le compresseur et la bobine d'arrêt (Cosy 6 et 9) sont équilibrées." },
     ],
     testButton: { label: "Tester l'onduleur", path: '/depannage/test-onduleur' },
     escalate: true,
@@ -188,7 +186,7 @@ const GUIDES = {
       { step: 2, title: 'Vérifier le capteur NTC T10', detail: "Confirmer que le capteur NTC T10 est correctement emboîté à son point de terminaison sur l'onduleur." },
       { step: 3, title: 'Tester la résistance du capteur NTC T10', detail: "Retirer le capteur T10 et tester la résistance entre les deux câbles T10. Utiliser le tableau de résistances pour vérifier que les valeurs correspondent à la température actuelle au niveau du capteur." },
       { step: 4, title: 'Vérifier le bornier', detail: "Confirmer que le bornier est correctement emboîté dans l'onduleur et que la fiche verte est entièrement insérée." },
-      { step: 5, title: 'Vérifier la vanne V1', detail: "Confirmer que la vanne V1 est correctement emboîtée." },
+      { step: 5, title: "Vérifier l'emboîtement de la vanne V1", detail: "Cette vérification se fait en soulevant le couvercle de l'unité, mais nécessite une carte CA v1.6 (contacter l'équipe Cosy pour la procédure)." },
     ],
     note: "Après le test du capteur T10, rebrancher les câbles dans la fiche verte de l'onduleur et s'assurer qu'elle est entièrement insérée. Si des valeurs sont anormales, contacter l'équipe Cosy.",
     escalate: true,
