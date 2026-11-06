@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { InlineImage, ImageRow, ImageLightbox } from '../components/GuideImages'
+import { POD_RESET_STEPS } from '../lib/podReset'
 
 // ── Quick checks ──────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ const QUICK_CHECKS = [
     title: 'Problème lors de la mise en service',
     icon: '⚙️',
     steps: [
-      { title: 'Pod ne se connecte pas', detail: 'Retirer la pile, maintenir le bouton enfoncé, réinsérer la pile, attendre le voyant rouge, puis relâcher.' },
+      { title: 'Pod ne se connecte pas', detail: 'Retirer une pile, maintenir le bouton boost enfoncé en la réinsérant, et maintenir jusqu\'au clignotement violet (environ 10 secondes).' },
       { title: 'Hub ne se connecte pas au Wi-Fi', detail: 'Vérifier que le réseau 2,4 GHz est disponible. Si double bande, désactiver temporairement le 5 GHz.' },
       { title: "Application client ne trouve pas le hub", detail: 'Vérifier que le client est connecté à son compte Octopus, puis Appareils → Ajouter un appareil Octopus → Scanner le QR code du hub.' },
     ],
@@ -84,6 +85,7 @@ const FAN_GUIDE = {
     { step: 3, title: 'Vérifier le connecteur ventilateur sur la carte CC', detail: "Vérifier que la connexion du ventilateur principal sur la carte CC est bien enfiché et non desserré.", image: { src: '/images/troubleshooting/dc-pcb.png', caption: "Carte CC — connecteur du ventilateur principal", hotspots: [ { id: 'dc-fan-plug', pos: { x: 0.5809, y: 0.2925 }, type: 'circle', radius: 0.08, label: 'Connecteur du ventilateur principal' } ] } },
     { step: 4, title: "Vérifier la tension d'alimentation", detail: "Vérifier que la tension d'alimentation du ventilateur principal depuis la carte CA est bien 230V CA." },
   ],
+  testButton: { label: 'Tester les connexions du ventilateur', path: '/depannage/test-ventilateur' },
   escalate: true,
 }
 
@@ -103,6 +105,7 @@ const INVERTER_GUIDE = {
     { step: 4, title: "Tester l'onduleur", detail: "Vérifier la tension d'alimentation et les tensions de sortie de l'onduleur." },
     { step: 5, title: 'Vérifier la vanne V4', detail: "Vérifier l'emboîtement et la bobine de la vanne V4." },
   ],
+  testButton: { label: "Tester l'onduleur", path: '/depannage/test-onduleur' },
   escalate: true,
 }
 
@@ -116,7 +119,7 @@ const GUIDES = {
     steps: [
       { step: 1, title: "Vérifier l'évaporateur", detail: "Vérifier que l'évaporateur n'est pas bloqué. S'il est gelé, le dégivrer en versant de l'eau directement sur l'évaporateur." },
       { step: 2, title: 'Vérifier les obstructions', detail: "Si des arbustes ont poussé ou si des objets ont été placés près de l'évaporateur, les dégager pour rétablir un flux d'air correct." },
-      { step: 3, title: "Effectuer une purge d'air", detail: "S'assurer qu'il n'y a pas de poche d'air dans les canalisations en hauteur. Suivre la procédure de purge d'air." },
+      { step: 3, title: "Effectuer une purge d'air", detail: "Effectuer une purge d'air en mode AP, en s'assurant qu'il n'y a pas de poche d'air dans les canalisations en hauteur. Suivre la procédure de purge d'air.", link: { label: "Ouvrir la procédure de purge d'air", procedure: 'purge-air' } },
       { step: 4, title: 'Vérifier tous les filtres', detail: "Vérifier le filtre à l'avant de l'unité et le tamis du filtre magnétique — nettoyer si bloqué." },
       { step: 5, title: 'Vérifier toutes les vannes', detail: 'Confirmer que toutes les vannes et radiateurs sont entièrement ouverts.' },
       { step: 6, title: 'Mode AP — augmenter la vitesse de la pompe', detail: "Si l'erreur persiste, passer en mode AP et régler la vitesse de la pompe à 100% pour chasser l'air résiduel du circuit.", images: [ { src: '/images/troubleshooting/upm4xxl-pump.png', caption: "Pompe Grundfos UPM4XXL" } ] },
@@ -167,6 +170,7 @@ const GUIDES = {
       { step: 2, title: "Vérifier la tension d'alimentation", detail: "Confirmer la présence de 230V aux bornes d'alimentation principale de la pompe à chaleur." },
       { step: 3, title: "Vérifier les tensions de l'onduleur", detail: "Confirmer les tensions correctes sur l'entraînement de l'onduleur." },
     ],
+    testButton: { label: "Tester l'onduleur", path: '/depannage/test-onduleur' },
     escalate: true,
   },
 
@@ -223,13 +227,16 @@ const COMMISSIONING_ISSUE_CODES = [
 const COMMISSIONING_GUIDES = {
   'Pod ne se couple pas': {
     causes: [
-      'Matériel du pod nécessitant une réinitialisation',
-      "Interférence d'un autre appareil Zigbee utilisant d'anciennes architectures de couplage ouvert (ex. ampoules Philips Hue)",
+      'Problèmes de connexion au hub',
+      'Pile faible dans le pod',
+      'Connexion interrompue lors du couplage du pod',
+      'Temps insuffisant laissé aux pods pour établir la connexion',
     ],
     steps: [
-      { step: 1, title: 'Retirer la pile du pod', detail: 'Retirer la pile du pod.' },
-      { step: 2, title: 'Maintenir le bouton et réinsérer la pile', detail: 'Maintenir le bouton enfoncé tout en réinsérant la pile.' },
-      { step: 3, title: 'Maintenir jusqu\'à l\'apparition du voyant rouge', detail: 'Continuer à maintenir le bouton jusqu\'à l\'apparition du voyant rouge. Le pod est maintenant réinitialisé et peut être couplé à nouveau.' },
+      { step: 1, title: 'Vérifier la distance au hub', detail: "S'assurer que le pod est suffisamment proche du hub et qu'il n'est pas perturbé par de gros objets métalliques à proximité. Tenir compte aussi du nombre de murs entre les deux : un pod dans un garage peut avoir du mal à se connecter à un hub situé à l'étage, de l'autre côté du logement." },
+      { step: 2, title: 'Vérifier la force de connexion du pod', detail: "La force de connexion du pod se vérifie dans la section « Pods » en mode installateur AP. Valeur en dBm : de -30 (bon) à -70 (mauvais)." },
+      { step: 3, title: 'Laisser le temps de se connecter', detail: "Les pods envoient un signal toutes les 2 minutes : prévoir 2 à 10 minutes pour la connexion des pods en mode AP. Une fois connecté à l'appareil du client, prévoir un délai similaire pour que les pods apparaissent. Actualiser l'application peut faire disparaître les erreurs « pile faible ». Pour vérifier la connexion, essayer avec votre propre téléphone à côté du hub : si le Wi-Fi est irrégulier ou faible, le hub aura probablement aussi du mal à se connecter." },
+      { step: 4, title: 'Vérifier que le pod peut se reconnecter', detail: 'Suivre ces étapes :', sub: POD_RESET_STEPS },
     ],
     note: "Si le pod reste bloqué en mode couplage après la réinitialisation, la cause probable est une interférence d'un autre appareil Zigbee (ex. ampoules Philips Hue). Si une interférence est suspectée : (1) couper l'alimentation de tous les autres appareils possibles, (2) tenter de coupler les pods à nouveau, (3) si toujours bloqué, réinitialiser comme ci-dessus, (4) retirer le hub et les pods du logement et tenter le couplage avec le hub alimenté séparément hors du logement.",
     escalate: true,
@@ -332,6 +339,17 @@ function GuideView({ guide, onEscalate, onBack, backLabel }) {
               <div className="flex-1">
                 <p className="text-sm font-semibold text-brand-navy">{s.title}</p>
                 <p className="text-sm text-gray-600 mt-0.5">{s.detail}</p>
+                {s.sub && (
+                  <ol className="mt-2 space-y-1.5 list-decimal pl-5">
+                    {s.sub.map((t, i) => <li key={i} className="text-sm text-gray-600">{t}</li>)}
+                  </ol>
+                )}
+                {s.link && (
+                  <button onClick={() => navigate('/informations', { state: { section: 'procedures', item: s.link.procedure } })}
+                    className="mt-2 text-sm font-medium text-brand-purple">
+                    {s.link.label} →
+                  </button>
+                )}
                 {s.image && <InlineImage img={s.image} onOpen={setLightbox} />}
                 {s.images && <div className="mt-3"><ImageRow images={s.images} title="Photo de référence" /></div>}
               </div>
@@ -354,6 +372,14 @@ function GuideView({ guide, onEscalate, onBack, backLabel }) {
       )}
 
       <div className="pt-2 space-y-3">
+        {guide.testButton && (
+          <button onClick={() => navigate(guide.testButton.path)} className="btn-secondary flex items-center justify-center gap-2">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            {guide.testButton.label}
+          </button>
+        )}
         <button onClick={() => setResolved(true)} className="btn-primary flex items-center justify-center gap-2">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

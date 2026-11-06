@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage'
 import HubPage from './pages/HubPage'
 import TroubleshootingPage from './pages/TroubleshootingPage'
 import InfoPage from './pages/InfoPage'
+import FanTestPage from './pages/FanTestPage'
+import InverterTestPage from './pages/InverterTestPage'
 import SupportPage from './pages/SupportPage'
 import AdminPage from './pages/AdminPage'
 import UserTicketsPage from './pages/UserTicketsPage'
@@ -74,6 +76,12 @@ export default function App() {
         } />
         <Route path="/depannage" element={
           <ProtectedRoute session={session}><TroubleshootingPage session={session} /></ProtectedRoute>
+        } />
+        <Route path="/depannage/test-ventilateur" element={
+          <ProtectedRoute session={session}><FanTestPage /></ProtectedRoute>
+        } />
+        <Route path="/depannage/test-onduleur" element={
+          <ProtectedRoute session={session}><InverterTestPage /></ProtectedRoute>
         } />
         <Route path="/informations" element={
           <ProtectedRoute session={session}><InfoPage session={session} /></ProtectedRoute>

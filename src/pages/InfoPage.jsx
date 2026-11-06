@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ImageRow } from '../components/GuideImages'
+import { POD_RESET_STEPS } from '../lib/podReset'
 
 // ── Unit specs (source: Manuel d'installation FRV1, section 7) ──────────────────
 
@@ -243,14 +244,13 @@ const PROCEDURES = [
     id: 'purge-air',
     title: "Purge d'air",
     category: 'Maintenance',
-    description: "Pour effectuer une purge d'air depuis l'application d'un installateur autorisé.",
+    description: "Purge d'air depuis le mode installateur AP.",
     steps: [
-      { step: 1, title: 'Ouvrir toutes les vannes', detail: 'Vérifier que toutes les vannes, les zones de plancher chauffant et les radiateurs sont entièrement ouverts.' },
-      { step: 2, title: 'Purger le collecteur et les circuits', detail: "Purger manuellement le collecteur de plancher chauffant et les purgeurs de radiateurs jusqu'à l'écoulement d'eau sans bulles." },
-      { step: 3, title: "Accéder au mode purge via l'application installateur", detail: "Dans l'application installateur, aller dans Contrôles → Mode purge. La pompe tourne en continu pour permettre la purge." },
-      { step: 4, title: 'Purger le purgeur automatique de l\'unité', detail: "Localiser le purgeur automatique à l'intérieur de l'unité et desserrer légèrement le capuchon pour permettre l'évacuation de l'air." },
-      { step: 5, title: 'Surveiller la pression', detail: "Surveiller la pression durant la purge. Si elle tombe en dessous de 0,5 bar, ajouter de l'eau via le robinet de remplissage." },
-      { step: 6, title: 'Rétablir la pression finale', detail: "Après purge, ajuster la pression à 1,5–2,0 bar à froid. Refermer tous les purgeurs et resserrer les capuchons." },
+      { step: 1, title: 'Entrer en mode installateur AP', detail: "Ouvrir l'onglet Configuration du système." },
+      { step: 2, title: 'Vérifier que tous les émetteurs sont ouverts', detail: "S'assurer que tous les émetteurs sont entièrement ouverts, y compris les zones de plancher chauffant." },
+      { step: 3, title: 'Régler la pompe primaire à 100 %', detail: "Sélectionner la pompe primaire sur « on »." },
+      { step: 4, title: 'Activer la pompe ECS', detail: "Activer l'interrupteur de la pompe ECS pour purger l'air du circuit d'eau chaude sanitaire." },
+      { step: 5, title: 'Répéter pour chaque zone', detail: "Une fois le circuit ECS terminé, répéter pour la zone 1 (puis la zone 2 / Aux si nécessaire) jusqu'à évacuation de l'excès d'air. Mettre la pompe ECS sur « off » avant de passer à la zone 1, et la zone 1 sur « off » avant de passer à la zone 2." },
     ],
     note: "Si une panne active de débit empêche la purge, effectuer un cycle d'alimentation de la pompe à chaleur depuis l'isolateur. Attendre quelques minutes, remettre sous tension, puis effectuer immédiatement une purge via le mode AP.",
   },
@@ -259,13 +259,7 @@ const PROCEDURES = [
     title: 'Réinitialisation des pods',
     category: 'Configuration',
     description: 'À effectuer si les pods ne répondent pas ou doivent être couplés à nouveau.',
-    steps: [
-      { step: 1, title: 'Retirer la pile', detail: 'Ouvrir le pod et retirer la pile.' },
-      { step: 2, title: 'Maintenir le bouton enfoncé', detail: 'Maintenir le bouton du pod enfoncé.' },
-      { step: 3, title: 'Réinsérer la pile tout en maintenant', detail: 'Tout en maintenant le bouton, réinsérer la pile.' },
-      { step: 4, title: 'Attendre le voyant rouge', detail: "Continuer à maintenir jusqu'à l'apparition du voyant rouge. Relâcher ensuite." },
-      { step: 5, title: 'Recouplage', detail: "Le pod est maintenant réinitialisé. Suivre la procédure de couplage dans l'application." },
-    ],
+    steps: POD_RESET_STEPS.map((detail, i) => ({ step: i + 1, title: null, detail })),
   },
   {
     id: 'zigbee-reset',
@@ -286,26 +280,31 @@ const PROCEDURES = [
     category: 'Maintenance',
     description: "Effectuer annuellement ou si une erreur de débit est affichée.",
     steps: [
-      { step: 1, title: "Isoler l'unité", detail: "Fermer les vannes d'isolement de départ et de retour de l'unité." },
-      { step: 2, title: 'Dépressuriser', detail: "Ouvrir légèrement le purgeur le plus proche pour dépressuriser le côté unité du circuit." },
-      { step: 3, title: 'Déposer le tamis', detail: "Dévisser le bouchon de la cartouche du tamis. Prévoir un chiffon — un peu d'eau peut s'écouler." },
-      { step: 4, title: 'Nettoyer', detail: "Rincer la cartouche à l'eau claire jusqu'à ce qu'elle soit propre. Inspecter pour déformation ou usure." },
-      { step: 5, title: 'Réinstaller et remettre en pression', detail: "Réinsérer la cartouche, visser le bouchon, rouvrir les vannes et vérifier la pression (1,5–2,0 bar)." },
-      { step: 6, title: "Purger l'air résiduel", detail: "Effectuer une courte purge pour éliminer l'air introduit pendant l'opération." },
+      { step: 1, title: "Isoler l'unité", detail: "Couper l'isolateur rotatif." },
+      { step: 2, title: 'Verrouiller et isoler', detail: "Verrouiller l'isolateur rotatif et suivre la procédure d'isolation sécurisée." },
+      { step: 3, title: 'Isoler le départ et le retour primaires', detail: "Fermer les vannes de départ et de retour primaires à l'arrière de l'unité." },
+      { step: 4, title: 'Déposer le capot avant', detail: "Retirer le capot avant de la pompe à chaleur." },
+      { step: 5, title: "Relâcher la pression d'eau en sécurité", detail: "Desserrer progressivement le tamis jusqu'à ce que l'eau commence à s'écouler de l'unité." },
+      { step: 6, title: 'Déposer le tamis', detail: "Dévisser complètement le tamis du corps du filtre." },
+      { step: 7, title: 'Retirer la maille du filtre', detail: "Retirer le filtre et nettoyer soigneusement la maille." },
+      { step: 8, title: 'Remonter', detail: "Remonter le tamis en vérifiant que le joint est encore en bon état." },
+      { step: 9, title: 'Rouvrir les isolateurs et purger', detail: "Rouvrir les vannes de départ et de retour, puis purger l'air au purgeur de l'unité." },
+      { step: 10, title: 'Reposer le capot', detail: "Remettre le capot avant en place." },
+      { step: 11, title: "Remettre l'isolateur rotatif sous tension", detail: "Remettre l'isolateur rotatif en marche." },
+      { step: 12, title: "Purger l'air du circuit", detail: "Purger le circuit en suivant la procédure de purge d'air.", link: { label: "Ouvrir la procédure de purge d'air", procedure: 'purge-air' } },
     ],
   },
   {
     id: 'secondary-pump',
     title: 'Réglage de la pompe secondaire',
     category: 'Configuration',
-    description: "Paramétrer la vitesse et le mode de fonctionnement de la pompe secondaire.",
+    description: "Pour obtenir un ΔT de 5 sur un système à ballon tampon 4 tubes : laisser la température de départ atteindre sa consigne avant de régler la pompe secondaire. Utiliser la température de départ fixe pour laquelle le système a été conçu afin d'accélérer l'opération.",
     steps: [
-      { step: 1, title: "Accéder aux paramètres pompe", detail: "Dans l'application installateur : Paramètres → Paramètres système → Pompe secondaire." },
-      { step: 2, title: 'Sélectionner le mode', detail: "Mode proportionnel (recommandé) : la pompe ajuste automatiquement sa vitesse selon la demande. Mode vitesse fixe : régler la vitesse manuellement de 0 à 100%." },
-      { step: 3, title: 'Pour le mode proportionnel', detail: "Régler la pression différentielle de consigne entre 0,2 et 0,5 bar. Commencer à 0,3 bar pour une installation standard." },
-      { step: 4, title: 'Pour le mode vitesse fixe', detail: "Régler à 100% pour la purge initiale, puis réduire progressivement jusqu'à obtenir un ΔT de 5–10°C entre départ et retour en chauffage." },
-      { step: 5, title: 'Vérifier les températures de départ/retour', detail: "En fonctionnement, confirmer que les températures de départ et retour sont cohérentes avec la consigne et le type d'émetteurs." },
+      { step: 1, title: 'Ouvrir tous les émetteurs', detail: "S'assurer que tous les émetteurs sont entièrement ouverts, y compris les zones de plancher chauffant." },
+      { step: 2, title: 'Fixer des thermomètres à pince', detail: "Fixer des thermomètres à pince sur le départ et le retour côté émetteurs du ballon tampon." },
+      { step: 3, title: 'Surveiller et ajuster', detail: "Surveiller la température aux deux pinces. Lorsque l'unité produit la consigne de température de départ souhaitée et module, ajuster la vitesse de la pompe secondaire pour obtenir un ΔT de 5 entre le départ et le retour des émetteurs." },
     ],
+    note: "En présence de plancher chauffant, une température de départ plus élevée déclenche le thermostat, qui ferme la vanne 2 voies.",
   },
 ]
 
@@ -318,14 +317,17 @@ const SECTIONS = [
   { id: 'hub', label: 'Cosy Hub', subtitle: 'Voyants LED & fonctionnement', icon: '💡' },
   { id: 'commissioning', label: 'Mise en service', subtitle: 'Zones, températures, pods', icon: '⚙️' },
   { id: 'procedures', label: 'Procédures', subtitle: 'Purge, réinitialisation, maintenance', icon: '🛠️' },
+  { id: 'engineer-mode', label: 'Mode ingénieur — traduction', subtitle: 'Écrans du contrôleur Cosy (EN + FR)', icon: '🌐' },
 ]
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function InfoPage() {
   const navigate = useNavigate()
-  const [section, setSection] = useState(null)
-  const [selected, setSelected] = useState(null)
+  const location = useLocation()
+  // Deep link from the troubleshooting guides: navigate('/informations', { state: { section, item } })
+  const [section, setSection] = useState(location.state?.section || null)
+  const [selected, setSelected] = useState(location.state?.item || null)
   const [specModel, setSpecModel] = useState('Cosy 6')
 
   function goBack() {
@@ -567,7 +569,7 @@ export default function InfoPage() {
                       <span className="text-brand-purple text-xs font-bold">{s.step}</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-brand-navy">{s.title}</p>
+                      {s.title && <p className="text-sm font-semibold text-brand-navy">{s.title}</p>}
                       <p className="text-sm text-gray-600 mt-0.5">{s.detail}</p>
                     </div>
                   </div>
@@ -587,6 +589,19 @@ export default function InfoPage() {
             </div>
           )
         })()}
+
+        {/* Engineer mode - translation (static reference page, not interactive) */}
+        {section === 'engineer-mode' && (
+          <div>
+            <div className="flex items-center justify-end mb-3">
+              <a href="/reference/cosy-controller.html" target="_blank" rel="noreferrer" className="text-brand-purple text-sm font-medium">Plein écran ↗</a>
+            </div>
+            <h2 className="font-bold text-brand-navy text-lg mb-1">Mode ingénieur — traduction</h2>
+            <p className="text-sm text-gray-500 mb-3">Les écrans du contrôleur sont en anglais. La traduction française figure entre crochets.</p>
+            <iframe src="/reference/cosy-controller.html" title="Mode ingénieur — traduction" sandbox="allow-scripts allow-same-origin"
+              className="w-full rounded-2xl border border-gray-200 bg-white" style={{ height: 'calc(100vh - 230px)', minHeight: 480 }} />
+          </div>
+        )}
 
         {/* Procedures */}
         {section === 'procedures' && !selected && (
@@ -631,8 +646,14 @@ export default function InfoPage() {
                       <span className="text-brand-purple text-xs font-bold">{s.step}</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-brand-navy">{s.title}</p>
+                      {s.title && <p className="text-sm font-semibold text-brand-navy">{s.title}</p>}
                       <p className="text-sm text-gray-600 mt-0.5">{s.detail}</p>
+                      {s.link && (
+                        <button onClick={() => { setSelected(s.link.procedure); window.scrollTo(0, 0) }}
+                          className="mt-2 text-sm font-medium text-brand-purple">
+                          {s.link.label} →
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
