@@ -52,7 +52,7 @@ const CLEARANCES_NOTES = [
   "Les arbustes et haies denses qui limitent le flux d'air comptent comme des murs. Les grillages, treillis et clôtures ajourées peuvent être ignorés.",
   "Un seul mur latéral est autorisé en plus du mur arrière. Si un côté a un mur/clôture >300 mm à moins de 1 m, l'autre côté ne doit en avoir aucun à moins de 1 m.",
   "Sites exposés au vent : placer l'arrière de l'unité face à un bloc massif (mur ou clôture) à plus de 250 mm, au moins aussi haut que le serpentin de l'évaporateur et de plus de 1200 mm de large.",
-  "Les compteurs et canalisations de gaz sont autorisés dans toutes les zones. Les briques alvéolées et évents de drainage sont autorisés partout, même juste derrière l'unité.",
+  "Les compteurs et canalisations de gaz sont autorisés dans toutes les zones. Les grilles de ventilation de vide sanitaire et évents de drainage sont autorisés partout, même juste derrière l'unité.",
   "Une unité placée à une distance de sécurité autre que le minimum augmente le risque de chocs accidentels avec le temps.",
 ]
 
@@ -196,12 +196,6 @@ const LED_STATES = [
 
 const COMMISSIONING_SECTIONS = [
   {
-    id: 'controller-ref',
-    title: 'Écrans du contrôleur Cosy (EN + FR)',
-    iframe: '/reference/cosy-controller.html',
-    steps: [],
-  },
-  {
     id: 'zones',
     title: 'Configuration des zones',
     steps: [
@@ -335,6 +329,7 @@ const SECTIONS = [
   { id: 'hub', label: 'Cosy Hub', subtitle: 'Voyants LED & fonctionnement', icon: '💡' },
   { id: 'commissioning', label: 'Mise en service', subtitle: 'Zones, températures, pods', icon: '⚙️' },
   { id: 'procedures', label: 'Procédures', subtitle: 'Purge, réinitialisation, maintenance', icon: '🛠️' },
+  { id: 'manual', label: "Manuel d'installation", subtitle: 'Télécharger le manuel complet (PDF)', icon: '📘' },
   { id: 'engineer-mode', label: 'Mode ingénieur — traduction', subtitle: 'Écrans du contrôleur Cosy (EN + FR)', icon: '🌐' },
 ]
 
@@ -607,6 +602,28 @@ export default function InfoPage() {
             </div>
           )
         })()}
+
+        {/* Installation manual download */}
+        {section === 'manual' && (
+          <div className="space-y-4">
+            <div className="card">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-brand-purple/10 flex items-center justify-center flex-shrink-0 text-2xl">📘</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-brand-navy">Manuel d'installation Cosy</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Version 1.1 — novembre 2026 · PDF, 125 pages (environ 10 Mo)</p>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2">
+                <a href="/documents/manuel-installation-cosy-FRV1.1-nov-2026.pdf" download="Manuel-installation-Cosy-FRV1.1-nov-2026.pdf"
+                  className="btn-primary flex items-center justify-center gap-2 text-sm">Télécharger le manuel (PDF)</a>
+                <a href="/documents/manuel-installation-cosy-FRV1.1-nov-2026.pdf" target="_blank" rel="noreferrer"
+                  className="btn-secondary flex items-center justify-center gap-2 text-sm">Ouvrir dans le navigateur</a>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">Le manuel couvre l'ensemble de l'installation, de la mise en service et de l'entretien. En cas de doute, le manuel fait foi. Réservé aux entreprises d'installation : ne pas le partager avec les clients.</p>
+          </div>
+        )}
 
         {/* Engineer mode - translation (static reference page, not interactive) */}
         {section === 'engineer-mode' && (

@@ -7,7 +7,7 @@ export const supabase = createClient(
 )
 
 // Verifies the caller's Supabase JWT (Authorization: Bearer <token>).
-// Returns { user, isAdmin } or null. The role comes from app_metadata, which users cannot edit.
+// Returns { user, isAdmin, isStaff, companyId } or null. The role comes from app_metadata, which users cannot edit.
 export async function getCaller(req) {
   const header = req.headers.authorization || ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : null
@@ -16,5 +16,10 @@ export async function getCaller(req) {
   if (error || !data?.user) return null
   // Account must be allowed into this app (app_metadata.apps is server-only)
   if (!data.user.app_metadata?.apps?.includes('support_cosy')) return null
-  return { user: data.user, isAdmin: data.user.app_metadata?.role === 'admin' }
+  return {
+    user: data.user,
+    isAdmin: data.user.app_metadata?.role === 'admin',                       // UK admin: can manage users
+    isStaff: data.user.app_metadata?.role === 'admin' || data.user.app_metadata?.cosy_role === 'support', // UK admin or UK support
+    companyId: data.user.app_metadata?.company_id || null, // set by admins in Admin > Users; users cannot edit app_metadata
+  }
 }

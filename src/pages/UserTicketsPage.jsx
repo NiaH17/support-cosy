@@ -88,8 +88,7 @@ export default function UserTicketsPage({ session }) {
   async function loadRequests() {
     const { data } = await supabase
       .from('fr_support_requests')
-      .select('*')
-      .eq('user_id', session.user.id)
+      .select('*') // row-level security returns this user's requests plus their company's
       .order('created_at', { ascending: false })
     setRequests(data || [])
     setLoading(false)
@@ -203,6 +202,7 @@ export default function UserTicketsPage({ session }) {
                     </div>
                     <p className="font-semibold text-sm text-brand-navy">{ISSUE_LABELS[req.issue_type] || req.issue_type}</p>
                     {req.installation_company && <p className="text-xs text-gray-500 mt-0.5">{req.installation_company}</p>}
+                    {req.user_id !== session.user.id && req.user_name && <p className="text-xs text-brand-purple mt-0.5">Par {req.user_name}</p>}
                     <p className="text-xs text-gray-400 mt-1 line-clamp-2">{req.description_fr}</p>
                   </button>
                 )

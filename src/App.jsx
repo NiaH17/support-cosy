@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { supabase } from './lib/supabase'
+import { isStaff } from './lib/roles'
 import LoginPage from './pages/LoginPage'
 import HubPage from './pages/HubPage'
 import TroubleshootingPage from './pages/TroubleshootingPage'
@@ -28,7 +29,7 @@ function ProtectedRoute({ session, children }) {
 
 function AdminRoute({ session, children }) {
   if (!session) return <Navigate to="/connexion" replace />
-  if (session.user?.app_metadata?.role !== 'admin') return <Navigate to="/" replace />
+  if (!isStaff(session)) return <Navigate to="/" replace />
   return children
 }
 

@@ -24,7 +24,7 @@ export default function InstallRegisterPage({ session }) {
     install_date: today(),
     address: '',
     lead_engineer: user.user_metadata?.full_name || '',
-    partner_contractor: '',
+    partner_contractor: user.user_metadata?.company_name || '', // filled in from the account's company
     outdoor_serial: '',
     indoor_serial: '',
     model: '',
@@ -159,7 +159,8 @@ export default function InstallRegisterPage({ session }) {
           <div><label className="form-label">Ingénieur responsable<span className="text-red-400 ml-1">*</span></label>
             <input className="input-field" value={form.lead_engineer} onChange={e => set('lead_engineer', e.target.value)} required /></div>
           <div><label className="form-label">Partenaire / entreprise</label>
-            <input className="input-field" value={form.partner_contractor} onChange={e => set('partner_contractor', e.target.value)} /></div>
+            <input className={`input-field ${user.user_metadata?.company_name ? 'bg-gray-50' : ''}`} value={form.partner_contractor} readOnly={!!user.user_metadata?.company_name} onChange={e => set('partner_contractor', e.target.value)} /></div>
+          {user.email && <p className="text-xs text-gray-400 -mt-2">Enregistré par {user.user_metadata?.full_name ? `${user.user_metadata.full_name} · ` : ''}{user.email}</p>}
           <div><label className="form-label">Modèle<span className="text-red-400 ml-1">*</span></label>
             <select className="input-field" value={form.model} onChange={e => set('model', e.target.value)} required>
               <option value="">Sélectionner…</option>

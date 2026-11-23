@@ -1,12 +1,10 @@
-// Pod reset sequence (source: "Octo assist.docx", Pods will not pair, step 4).
-// Shared by the troubleshooting guide and the "Réinitialisation des pods" procedure.
+// Pod reset sequence, as written by Joe (same content as the "Réinitialisation des pods" procedure).
+// Used as the sub-steps of the "Pod ne se couple pas" troubleshooting guide.
 export const POD_RESET_STEPS = [
-  "Passer en mode AP et retirer le pod.",
-  "Retirer l'une des piles du pod.",
-  "Maintenir enfoncé le bouton boost du pod tout en réinsérant la pile.",
-  "Maintenir le bouton boost enfoncé jusqu'à ce que le pod clignote en violet (environ 10 secondes).",
-  "Réessayer de coupler le pod avec la procédure habituelle.",
-  "En cas de succès, le clignotement violet s'arrête et le pod clignote brièvement en blanc.",
-  "Vérifier le pod et le réaffecter à la bonne zone s'il ne l'a pas été automatiquement.",
-  "Après environ 2 minutes, le Cosy Hub doit indiquer qu'il est en ligne (les premières mesures des capteurs mettent un peu de temps à remonter). L'application doit aussi l'indiquer une fois le hub reconnecté au Wi-Fi.",
+  "Aller à la page « Pods » en mode installateur AP et supprimer tous les pods (les boutons de suppression sont tout à droite ; il faudra peut-être faire défiler la page horizontalement pour les voir).",
+  "Réinitialiser tous les pods qui ne clignotent pas en violet, comme décrit dans les étapes suivantes.",
+  "Retirer les piles du pod.",
+  "Maintenir le bouton boost enfoncé et réinsérer les piles (tout en continuant à maintenir le bouton boost enfoncé).",
+  "Attendre que le voyant rouge du pod cesse de clignoter (cela peut prendre environ 15 secondes). Le voyant devient ensuite violet et clignote.",
+  "Recoupler le pod en suivant la procédure décrite dans « Couplage des pods ».",
 ]

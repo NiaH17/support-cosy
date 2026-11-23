@@ -50,6 +50,8 @@ Environment variables (set in Vercel for deployed copies):
 | `VITE_SUPABASE_ANON_KEY` | front end | No (public by design) |
 | `SUPABASE_SERVICE_ROLE_KEY` | API only | **Yes. Full database access. Never in git, chat or the front end.** |
 | `DEEPL_API_KEY` | API only | **Yes** |
+| `SLACK_WEBHOOK_URL` | API only | **Yes** (optional: posts new requests and replies to Slack) |
+| `APP_URL` | API only | No (links in Slack messages; defaults to https://support-cosy.vercel.app) |
 
 ## Working on it (branches and releases)
 
@@ -74,6 +76,7 @@ Current order:
 4. `20261016_installations_and_assignment.sql` (installs table, private photo bucket, "which admin")
 5. `20261016b_app_access.sql` (access split between the two apps)
 6. `20261016c_user_delete_keeps_records.sql` (lets users be deleted)
+7. `20261123_companies.sql` (company profiles: colleagues share requests and installs; UK support role)
 
 Known gap: the live database also has tables and columns created earlier by hand that aren't in these files. These are `fr_support_messages`, the triage columns on `fr_support_requests`, `photo_urls`, `installation_company` and the `support-photos` bucket. Some of that SQL lives in the OctoAssist repo (`20260923_support_messages.sql`, `enable-realtime.sql`). Treat the live database as the source of truth, and add any new change as a new migration file.
 
@@ -82,7 +85,7 @@ Known gap: the live database also has tables and columns created earlier by hand
 Both apps use one Supabase user list. To keep them separate, each account has `app_metadata.apps`, for example `["support_cosy"]`, `["octo_assist"]` or both. Users cannot edit `app_metadata`.
 
 - Support Cosy only lets in accounts whose `apps` includes `support_cosy`. This is enforced in `App.jsx`, in `api/_auth.js` and by Postgres policies (`public.has_app(...)`).
-- **Admin** = `app_metadata.role = 'admin'` (plus Support Cosy access). Installers have no role.
+- Access levels: **UK admin** = `app_metadata.role = 'admin'` (everything, including the Users and Reports tabs). **UK support** = `app_metadata.cosy_role = 'support'` (all tickets and installs, no Users or Reports tabs). **French partner** = neither (information, plus requests and installs from their own company). Helpers: `public.is_admin()` in SQL (covers admin and support), `src/lib/roles.js` in the app. UK support is created from Admin → Users; UK admin is set in the database only.
 - Create installer accounts from **Admin → Users** in the app. No email is sent, and the password is shown once to pass on. Supabase's built-in email only reaches Octopus team members, so invite and reset emails won't reach the French company.
 - After changing anyone's `app_metadata`, they must log out and back in.
 - **Never** read roles or access from `user_metadata`. Users can edit it. (Octo Assist still does this for its roles, which is a known weakness.)

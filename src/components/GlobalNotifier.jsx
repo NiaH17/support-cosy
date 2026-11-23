@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { isStaff } from '../lib/roles'
 
 const ISSUE_FR = {
   electrical: 'Problème électrique', mechanical: 'Problème mécanique',
@@ -19,7 +20,7 @@ const ISSUE_EN = {
 export default function GlobalNotifier({ session }) {
   const navigate = useNavigate()
   const location = useLocation()
-  const isAdmin = session?.user?.app_metadata?.role === 'admin'
+  const isAdmin = isStaff(session)
   const userId = session?.user?.id
   const [items, setItems] = useState([])
 

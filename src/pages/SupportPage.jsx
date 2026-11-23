@@ -39,14 +39,14 @@ export default function SupportPage({ session }) {
   const fileInputRef = useRef(null)
   const [faultOpen, setFaultOpen] = useState(false)
   const [form, setForm] = useState({
-    installation_company: '',
+    installation_company: session?.user?.user_metadata?.company_name || '', // filled in from the account
     site_address: '',
     issue_type: '',
     fault_codes: [],   // multi-select
     urgency: 'medium',
     description: '',
     contact_phone: '',
-    contact_email: '',
+    contact_email: session?.user?.email || '',
   })
   const [photos, setPhotos] = useState([])
   const [submitting, setSubmitting] = useState(false)
@@ -148,7 +148,7 @@ export default function SupportPage({ session }) {
     setSubmitting(false)
   }
 
-  const emptyForm = { installation_company: '', site_address: '', issue_type: '', fault_codes: [], urgency: 'medium', description: '', contact_phone: '', contact_email: '' }
+  const emptyForm = { installation_company: session?.user?.user_metadata?.company_name || '', site_address: '', issue_type: '', fault_codes: [], urgency: 'medium', description: '', contact_phone: '', contact_email: session?.user?.email || '' }
 
   if (submitted) {
     return (
@@ -195,8 +195,10 @@ export default function SupportPage({ session }) {
         {/* Installation company */}
         <div>
           <label className="form-label">Entreprise d'installation</label>
-          <input type="text" className="input-field" placeholder="Ex. Chauffage Dupont & Fils"
+          <input type="text" className={`input-field ${session?.user?.user_metadata?.company_name ? 'bg-gray-50' : ''}`} placeholder="Ex. Chauffage Dupont & Fils"
+            readOnly={!!session?.user?.user_metadata?.company_name}
             value={form.installation_company} onChange={e => update('installation_company', e.target.value)} />
+          {session?.user?.email && <p className="text-xs text-gray-400 mt-1.5">Envoyée par {session.user.user_metadata?.full_name ? `${session.user.user_metadata.full_name} · ` : ''}{session.user.email}</p>}
         </div>
 
         {/* Site address */}

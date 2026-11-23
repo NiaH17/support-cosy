@@ -2,6 +2,7 @@
 // Requires a logged-in caller. Translates the French description to English and stores the request.
 // Identity (user_id / email) comes from the verified token, never from the request body.
 import { supabase, getCaller } from './_auth.js'
+import { notifySlack, clip, APP_URL } from './_slack.js'
 
 const MAX_DESC = 4000
 const MAX_PER_HOUR = 10
@@ -45,11 +46,19 @@ export default async function handler(req, res) {
 
     const descriptionEn = await translateToEnglish(payload.description)
 
+    // Engineers belong to a company: their requests are shared with colleagues and labelled with the company name
+    let companyName = null
+    if (caller.companyId) {
+      const { data: co } = await supabase.from('fr_companies').select('name').eq('id', caller.companyId).maybeSingle()
+      companyName = co?.name || null
+    }
+
     const { data, error } = await supabase.from('fr_support_requests').insert({
       user_id: caller.user.id,
       user_email: caller.user.email,
       user_name: caller.user.user_metadata?.full_name || caller.user.email,
-      installation_company: payload.installation_company || null,
+      company_id: caller.companyId,
+      installation_company: companyName || payload.installation_company || null,
       site_address: payload.site_address,
       issue_type: payload.issue_type,
       fault_code: payload.fault_code || null,
@@ -61,6 +70,17 @@ export default async function handler(req, res) {
     }).select().single()
 
     if (error) throw error
+
+    await notifySlack({
+      title: `New support request${data.urgency === 'high' ? ' (URGENT)' : ''}`,
+      lines: [
+        `From: ${data.user_name || data.user_email}${data.installation_company ? ` (${data.installation_company})` : ''}`,
+        `Issue: ${data.issue_type}${data.fault_code ? ` · ${data.fault_code}` : ''} · urgency ${data.urgency}`,
+        data.site_address ? `Site: ${data.site_address}` : '',
+        clip(data.description_en || data.description_fr),
+      ],
+      url: `${APP_URL}/admin?ticket=${data.id}`,
+    })
 
     return res.status(200).json({ success: true, id: data.id })
   } catch (err) {

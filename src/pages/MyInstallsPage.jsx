@@ -12,7 +12,7 @@ export default function MyInstallsPage({ session }) {
   const selected = installs.find(i => i.id === selectedId)
 
   useEffect(() => {
-    supabase.from('fr_installations').select('*').eq('user_id', session.user.id)
+    supabase.from('fr_installations').select('*') // own + company installs, via row-level security
       .order('created_at', { ascending: false })
       .then(({ data }) => { setInstalls(data || []); setLoading(false) })
   }, [])
@@ -50,6 +50,7 @@ export default function MyInstallsPage({ session }) {
                   <span className="text-xs text-gray-400 flex-shrink-0">{new Date(i.install_date).toLocaleDateString('fr-FR')}</span>
                 </div>
                 <p className="text-xs text-gray-500 line-clamp-2 whitespace-pre-line">{i.address}</p>
+                {i.user_id !== session.user.id && i.lead_engineer && <p className="text-xs text-brand-purple mt-1">Par {i.lead_engineer}</p>}
                 {missing(i) > 0 && <p className="text-xs text-amber-600 mt-1.5">{missing(i)} contrôle(s) non coché(s)</p>}
               </button>
             ))}

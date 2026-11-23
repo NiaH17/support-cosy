@@ -5,6 +5,7 @@ import ReportingTab from '../components/admin/ReportingTab'
 import InstallationsTab from '../components/admin/InstallationsTab'
 import UsersTab from '../components/admin/UsersTab'
 import { supabase } from '../lib/supabase'
+import { isUkAdmin } from '../lib/roles'
 
 const URGENCY = {
   low:    { label: 'Low',    bg: 'bg-green-100',  text: 'text-green-700' },
@@ -97,6 +98,7 @@ export default function AdminPage({ session }) {
   const [selected, setSelected] = useState(null)
   const [messages, setMessages] = useState([])
   const [filter, setFilter] = useState('open')
+  const ukAdmin = isUkAdmin(session) // UK support cannot see the Users or Reports tabs
   const [view, setView] = useState('tickets')
   const [detailTab, setDetailTab] = useState('details')
   const [triage, setTriage] = useState({ part_needed: null, part_details: '', kraken_account: '', confirmed_issue: '' })
@@ -301,7 +303,7 @@ export default function AdminPage({ session }) {
             <span className="ml-auto text-white/40 text-sm">{requests.length} requests</span>
           </div>
           <div className="flex gap-1 p-1 rounded-xl bg-white/10 mb-3">
-            {[['tickets', 'Tickets'], ['installs', 'Installs'], ['users', 'Users'], ['reports', 'Reports']].map(([val, label]) => (
+            {[['tickets', 'Tickets'], ['installs', 'Installs'], ['users', 'Users'], ['reports', 'Reports']].filter(([val]) => ukAdmin || (val !== 'users' && val !== 'reports')).map(([val, label]) => (
               <button key={val} onClick={() => setView(val)}
                 className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-colors ${view === val ? 'bg-white text-brand-navy' : 'text-white/70'}`}>
                 {label}
@@ -323,11 +325,11 @@ export default function AdminPage({ session }) {
           </div>}
         </div>
         <div className="px-6 py-4 pb-12">
-          {view === 'reports' ? (
+          {view === 'reports' && ukAdmin ? (
             <ReportingTab requests={requests} />
           ) : view === 'installs' ? (
             <InstallationsTab />
-          ) : view === 'users' ? (
+          ) : view === 'users' && ukAdmin ? (
             <UsersTab currentUserId={session.user.id} />
           ) : loading ? (
             <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" /></div>

@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { isStaff } from '../lib/roles'
 
 export default function HubPage({ session }) {
   const navigate = useNavigate()
-  const role = session?.user?.app_metadata?.role
+  const staff = isStaff(session)
   const name = session?.user?.user_metadata?.full_name || session?.user?.email || ''
 
   async function handleSignOut() {
@@ -103,7 +104,7 @@ export default function HubPage({ session }) {
           </button>
         ))}
 
-        {role === 'admin' && (
+        {staff && (
           <div className="pt-2">
             <button onClick={() => navigate('/admin')}
               className="w-full card flex items-center gap-4 active:bg-gray-50 transition-colors border-brand-navy/10">

@@ -48,7 +48,7 @@ const QUICK_CHECKS = [
     title: 'Problème lors de la mise en service',
     icon: '⚙️',
     steps: [
-      { title: 'Pod ne se connecte pas', detail: 'Retirer une pile, maintenir le bouton boost enfoncé en la réinsérant, et maintenir jusqu\'au clignotement violet (environ 10 secondes).' },
+      { title: 'Pod ne se connecte pas', detail: 'Retirer les piles, maintenir le bouton boost enfoncé en les réinsérant, attendre que le voyant rouge cesse de clignoter (environ 15 secondes) : le voyant devient violet et clignote.' },
       { title: 'Hub ne se connecte pas au Wi-Fi', detail: 'Vérifier que le réseau 2,4 GHz est disponible. Si double bande, désactiver temporairement le 5 GHz.' },
       { title: "Application client ne trouve pas le hub", detail: 'Vérifier que le client est connecté à son compte Octopus, puis Appareils → Ajouter un appareil Octopus → Scanner le QR code du hub.' },
     ],

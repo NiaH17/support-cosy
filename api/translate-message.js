@@ -1,6 +1,7 @@
 // POST /api/translate-message
 // Requires a logged-in caller. Sender role is decided server-side, never taken from the request body.
 import { supabase, getCaller } from './_auth.js'
+import { notifySlack, clip, APP_URL } from './_slack.js'
 
 const MAX_LEN = 4000
 
@@ -32,18 +33,18 @@ export default async function handler(req, res) {
     }
     if (message.length > MAX_LEN) return res.status(400).json({ error: 'Message too long' })
 
-    const sender = caller.isAdmin ? 'admin' : 'user'
-    const internal = caller.isAdmin && !!is_internal   // only admins can write internal notes
+    const sender = caller.isStaff ? 'admin' : 'user'   // 'admin' = the UK team (UK admin or UK support)
+    const internal = caller.isStaff && !!is_internal   // only UK staff can write internal notes
 
-    // Non-admins may only post on their own tickets
-    if (!caller.isAdmin) {
+    // Non-admins may only post on their own tickets or their company's tickets
+    if (!caller.isStaff) {
       const { data: ticket } = await supabase
         .from('fr_support_requests')
-        .select('id')
+        .select('id, user_id, company_id')
         .eq('id', request_id)
-        .eq('user_id', caller.user.id)
         .maybeSingle()
-      if (!ticket) return res.status(403).json({ error: 'Forbidden' })
+      const allowed = ticket && (ticket.user_id === caller.user.id || (caller.companyId && ticket.company_id === caller.companyId))
+      if (!allowed) return res.status(403).json({ error: 'Forbidden' })
     }
 
     // Rate limit: 30 messages per caller per hour
@@ -89,6 +90,18 @@ export default async function handler(req, res) {
         })
         .eq('id', request_id)
         .is('assigned_admin_id', null)
+    }
+
+    // Slack: customer replies, and replies from the UK team (internal notes are never sent)
+    if (!internal) {
+      const { data: t } = await supabase.from('fr_support_requests')
+        .select('id, user_name, user_email, installation_company, issue_type').eq('id', request_id).maybeSingle()
+      const who = t ? `${t.user_name || t.user_email}${t.installation_company ? ` (${t.installation_company})` : ''}` : 'a partner'
+      await notifySlack({
+        title: sender === 'user' ? 'New reply from partner' : `Reply sent by ${caller.user.user_metadata?.full_name || caller.user.email}`,
+        lines: [`Request: ${t?.issue_type || ''} · ${who}`, clip(message_en || message_fr)],
+        url: `${APP_URL}/admin?ticket=${request_id}`,
+      })
     }
 
     return res.status(200).json({ success: true, message: data })

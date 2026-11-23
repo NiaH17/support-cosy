@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     const inst = {
       id: b.id,
       user_id: uid,
+      company_id: caller.companyId,
       user_email: caller.user.email,
       install_date: DATE.test(b.install_date || '') ? b.install_date : null,
       address: str(b.address, 500),

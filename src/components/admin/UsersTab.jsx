@@ -13,6 +13,8 @@ async function call(body) {
   return data
 }
 
+const ROLE_LABEL = { admin: 'UK admin', support: 'UK support', partner: 'French partner' }
+
 function generatePassword() {
   const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   const bytes = crypto.getRandomValues(new Uint32Array(12))
@@ -21,16 +23,18 @@ function generatePassword() {
 
 export default function UsersTab({ currentUserId }) {
   const [users, setUsers] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [newCompany, setNewCompany] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [form, setForm] = useState({ email: '', full_name: '', company_name: '', password: generatePassword() })
+  const [form, setForm] = useState({ email: '', full_name: '', company_id: '', role: 'partner', password: generatePassword() })
   const [saving, setSaving] = useState(false)
   const [created, setCreated] = useState(null) // { email, password } shown once so it can be passed on
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   async function load() {
-    try { setUsers((await call({ action: 'list' })).users) } catch (e) { setError(e.message) }
+    try { const r = await call({ action: 'list' }); setUsers(r.users); setCompanies(r.companies || []) } catch (e) { setError(e.message) }
     setLoading(false)
   }
   useEffect(() => { load() }, [])
@@ -42,10 +46,38 @@ export default function UsersTab({ currentUserId }) {
       const r = await call({ action: 'create', ...form })
       if (r.granted_existing) setNotice(`${form.email} already had an account. Support Cosy access was added; their password is unchanged.`)
       else setCreated({ email: form.email, password: form.password })
-      setForm({ email: '', full_name: '', company_name: '', password: generatePassword() })
+      setForm({ email: '', full_name: '', company_id: '', role: 'partner', password: generatePassword() })
       await load()
     } catch (err) { setError(err.message) }
     setSaving(false)
+  }
+
+  async function addCompany() {
+    const name = newCompany.trim()
+    if (!name) return
+    setError('')
+    try {
+      const r = await call({ action: 'create_company', name })
+      setCompanies(c => [...c, r.company].sort((a, b) => a.name.localeCompare(b.name)))
+      set('company_id', r.company.id)
+      setNewCompany('')
+    } catch (err) { setError(err.message) }
+  }
+  async function changeRole(u, role) {
+    setError(''); setNotice('')
+    try {
+      await call({ action: 'set_role', user_id: u.id, role })
+      setNotice(`${u.email} is now ${ROLE_LABEL[role]}. They need to log out and back in for it to apply.`)
+      await load()
+    } catch (err) { setError(err.message) }
+  }
+  async function changeCompany(u, company_id) {
+    setError(''); setNotice('')
+    try {
+      await call({ action: 'set_company', user_id: u.id, company_id: company_id || null })
+      setNotice(`${u.email}'s company was updated. They need to log out and back in for it to apply.`)
+      await load()
+    } catch (err) { setError(err.message) }
   }
 
   async function resetPassword(u) {
@@ -75,7 +107,20 @@ export default function UsersTab({ currentUserId }) {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Add a Support Cosy user</p>
         <input className="input-field" type="email" placeholder="Email" value={form.email} onChange={e => set('email', e.target.value)} required />
         <input className="input-field" placeholder="Full name" value={form.full_name} onChange={e => set('full_name', e.target.value)} />
-        <input className="input-field" placeholder="Company" value={form.company_name} onChange={e => set('company_name', e.target.value)} />
+        <select className="input-field" value={form.role} onChange={e => set('role', e.target.value)}>
+          <option value="partner">French partner (own company's requests and installs)</option>
+          <option value="support">UK support (all tickets and installs, no Users or Reports tabs)</option>
+        </select>
+        {form.role === 'partner' && (<>
+          <select className="input-field" value={form.company_id} onChange={e => set('company_id', e.target.value)}>
+            <option value="">No company (sees only their own requests)</option>
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <div className="flex gap-2">
+            <input className="input-field flex-1" placeholder="New company name" value={newCompany} onChange={e => setNewCompany(e.target.value)} />
+            <button type="button" onClick={addCompany} className="flex-shrink-0 text-xs font-semibold px-3 rounded-xl bg-white border border-gray-200 text-brand-navy">Add company</button>
+          </div>
+        </>)}
         <div className="flex gap-2">
           <input className="input-field flex-1 font-mono" value={form.password} onChange={e => set('password', e.target.value)} minLength={8} required />
           <button type="button" onClick={() => set('password', generatePassword())} className="flex-shrink-0 text-xs font-semibold px-3 rounded-xl bg-white border border-gray-200 text-brand-navy">New</button>
@@ -100,8 +145,20 @@ export default function UsersTab({ currentUserId }) {
                       {u.company_name ? `${u.company_name} · ` : ''}{u.last_sign_in_at ? `Last login ${new Date(u.last_sign_in_at).toLocaleDateString('en-GB')}` : 'Never logged in'}
                     </p>
                   </div>
-                  {u.is_admin && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-purple/10 text-brand-purple flex-shrink-0">Admin</span>}
+                  {u.role !== 'partner' && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-purple/10 text-brand-purple flex-shrink-0">{ROLE_LABEL[u.role]}</span>}
                 </div>
+                {!u.is_admin && (
+                  <select className="input-field mt-2 text-xs" value={u.role} onChange={e => changeRole(u, e.target.value)}>
+                    <option value="partner">French partner</option>
+                    <option value="support">UK support</option>
+                  </select>
+                )}
+                {u.role === 'partner' && (
+                  <select className="input-field mt-2 text-xs" value={u.company_id || ''} onChange={e => changeCompany(u, e.target.value)}>
+                    <option value="">No company</option>
+                    {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                )}
                 {!u.is_admin && (
                   <div className="flex gap-3 mt-2">
                     <button onClick={() => resetPassword(u)} className="text-xs font-semibold text-brand-purple">Reset password</button>
