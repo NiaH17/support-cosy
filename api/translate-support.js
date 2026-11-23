@@ -3,6 +3,7 @@
 // Identity (user_id / email) comes from the verified token, never from the request body.
 import { supabase, getCaller } from './_auth.js'
 import { notifySlack, clip, APP_URL } from './_slack.js'
+import { sendPush } from './_push.js'
 
 const MAX_DESC = 4000
 const MAX_PER_HOUR = 10
@@ -80,6 +81,17 @@ export default async function handler(req, res) {
         clip(data.description_en || data.description_fr),
       ],
       url: `${APP_URL}/admin?ticket=${data.id}`,
+    })
+
+    await sendPush({
+      audience: { staff: true },
+      payload: {
+        title: data.urgency === 'high' ? 'New support request (URGENT)' : 'New support request',
+        body: `${data.installation_company || data.user_name || data.user_email} · ${data.issue_type}`,
+        url: `/admin?ticket=${data.id}`,
+        tag: `ticket-${data.id}`,
+      },
+      excludeUserId: caller.user.id,
     })
 
     return res.status(200).json({ success: true, id: data.id })

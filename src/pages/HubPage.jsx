@@ -1,10 +1,24 @@
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useEffect, useState } from 'react'
 import { isStaff } from '../lib/roles'
+import { getPushState, enablePush, disablePush, isIOS } from '../lib/push'
 
 export default function HubPage({ session }) {
   const navigate = useNavigate()
   const staff = isStaff(session)
+  const loggedIn = !!session
+  const [pushState, setPushState] = useState('unsupported')
+  const [pushBusy, setPushBusy] = useState(false)
+  useEffect(() => { if (loggedIn) getPushState().then(setPushState) }, [loggedIn])
+  async function togglePush() {
+    setPushBusy(true)
+    try {
+      if (pushState === 'subscribed') await disablePush(); else await enablePush()
+    } catch { /* permission refused or network issue: state below reflects it */ }
+    setPushState(await getPushState())
+    setPushBusy(false)
+  }
   const name = session?.user?.user_metadata?.full_name || session?.user?.email || ''
 
   async function handleSignOut() {
@@ -67,12 +81,19 @@ export default function HubPage({ session }) {
     <div className="min-h-screen bg-gray-50 safe-top safe-bottom">
       <div className="bg-gradient-to-br from-brand-purple to-brand-pink px-6 pt-6 pb-8">
         <div className="flex items-center justify-between mb-5">
-          <button onClick={() => navigate('/mot-de-passe')} className="text-white/50 text-xs border border-white/20 rounded-xl px-3 py-1.5">
-            Mot de passe
-          </button>
-          <button onClick={handleSignOut} className="text-white/50 text-xs border border-white/20 rounded-xl px-3 py-1.5">
-            Déconnexion
-          </button>
+          {loggedIn ? (<>
+            <button onClick={() => navigate('/mot-de-passe')} className="text-white/50 text-xs border border-white/20 rounded-xl px-3 py-1.5">
+              Mot de passe
+            </button>
+            <button onClick={handleSignOut} className="text-white/50 text-xs border border-white/20 rounded-xl px-3 py-1.5">
+              Déconnexion
+            </button>
+          </>) : (<>
+            <span />
+            <button onClick={() => navigate('/connexion')} className="text-white text-xs border border-white/40 rounded-xl px-3 py-1.5">
+              Connexion partenaire
+            </button>
+          </>)}
         </div>
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
@@ -88,7 +109,7 @@ export default function HubPage({ session }) {
       </div>
 
       <div className="px-6 py-6 space-y-3">
-        {ACTIONS.map(action => (
+        {ACTIONS.filter(a => loggedIn || !['assistance', 'mes-demandes'].includes(a.id)).map(action => (
           <button key={action.id} onClick={() => navigate(action.route)}
             className="w-full card flex items-center gap-4 active:bg-gray-50 transition-colors">
             <div className={`w-12 h-12 rounded-2xl ${action.bg} flex items-center justify-center flex-shrink-0 ${action.color}`}>
@@ -103,6 +124,32 @@ export default function HubPage({ session }) {
             </svg>
           </button>
         ))}
+
+        {!loggedIn && (
+          <p className="text-xs text-gray-400 text-center px-2">
+            Les demandes d'assistance sont réservées aux partenaires connectés. <button onClick={() => navigate('/connexion')} className="text-brand-purple font-semibold">Se connecter</button>
+          </p>
+        )}
+
+        {loggedIn && (pushState === 'available' || pushState === 'subscribed') && (
+          <button onClick={togglePush} disabled={pushBusy}
+            className="w-full card flex items-center gap-4 active:bg-gray-50 transition-colors">
+            <div className="w-12 h-12 rounded-2xl bg-yellow-50 text-yellow-600 flex items-center justify-center flex-shrink-0 text-2xl">🔔</div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-brand-navy">{pushState === 'subscribed' ? 'Notifications activées' : 'Activer les notifications'}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{pushState === 'subscribed' ? 'Touchez pour les désactiver sur cet appareil' : 'Recevez une alerte sur ce téléphone à chaque réponse'}</p>
+            </div>
+          </button>
+        )}
+        {loggedIn && pushState === 'needs-install' && (
+          <div className="card text-sm text-gray-600">
+            <p className="font-semibold text-brand-navy mb-1">🔔 Notifications sur iPhone</p>
+            <p>Ajoutez d'abord l'application à l'écran d'accueil (Safari → Partager → « Sur l'écran d'accueil »), ouvrez-la depuis l'icône, puis activez les notifications ici.</p>
+          </div>
+        )}
+        {loggedIn && pushState === 'denied' && (
+          <div className="card text-sm text-gray-500">🔔 Les notifications sont bloquées pour cette application. Autorisez-les dans les réglages du téléphone ou du navigateur.</div>
+        )}
 
         {staff && (
           <div className="pt-2">

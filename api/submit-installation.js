@@ -1,8 +1,10 @@
 // POST /api/submit-installation
 // Stores an install registration. Installers and admins download a PDF copy from the app.
-// Identity comes from the verified login token. Photos/signatures are uploaded by the browser first;
-// this endpoint only accepts storage paths inside the caller's own folder for this registration.
+// Logged-in callers: identity comes from the verified login token; files live under <user id>/<install id>/.
+// Installers without a login: identified only by a secret device token (stored hashed); files live under anon/<install id>/.
+// Photos/signatures are uploaded by the browser first; this endpoint only accepts paths inside the right folder.
 import { supabase, getCaller } from './_auth.js'
+import { deviceHash, ipHash } from './_device.js'
 
 const MODELS = ['Cosy 6', 'Cosy 9', 'Cosy 12']
 const CHECK_KEYS = ['clearances', 'secured', 'insulation', 'condensate', 'flushed', 'hub_online', 'weather_comp', 'app_connected', 'app_understood']
@@ -16,18 +18,21 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   try {
     const caller = await getCaller(req)
-    if (!caller) return res.status(401).json({ error: 'Not authenticated' })
+    const anon = caller ? null : { dh: deviceHash(req), ih: ipHash(req) }
+    if (!caller && !anon.dh) return res.status(401).json({ error: 'Not authenticated' })
     const b = req.body || {}
-    const uid = caller.user.id
+    const uid = caller?.user.id || null
 
     if (!UUID.test(b.id || '')) return res.status(400).json({ error: 'Identifiant invalide' })
-    const base = `${uid}/${b.id}/`
+    const base = caller ? `${uid}/${b.id}/` : `anon/${b.id}/`
 
     const inst = {
       id: b.id,
       user_id: uid,
-      company_id: caller.companyId,
-      user_email: caller.user.email,
+      company_id: caller?.companyId || null,
+      user_email: caller?.user.email || null,
+      anon_token_hash: anon?.dh || null,
+      ip_hash: anon?.ih || null,
       install_date: DATE.test(b.install_date || '') ? b.install_date : null,
       address: str(b.address, 500),
       lead_engineer: str(b.lead_engineer),
@@ -48,6 +53,7 @@ export default async function handler(req, res) {
     if (!inst.install_date || !inst.address || !inst.lead_engineer || !MODELS.includes(inst.model) || !inst.outdoor_serial || !inst.hub_serial) {
       return res.status(400).json({ error: 'Champs obligatoires manquants' })
     }
+    if (!caller && !inst.partner_contractor) return res.status(400).json({ error: "Le nom de l'entreprise est obligatoire" })
     if (!inst.declaration_accepted) return res.status(400).json({ error: 'La déclaration doit être acceptée' })
 
     for (const k of PHOTO_KEYS) {
@@ -62,8 +68,13 @@ export default async function handler(req, res) {
 
     // Rate limit: 20 registrations per hour per user
     const since = new Date(Date.now() - 3600 * 1000).toISOString()
-    const { count } = await supabase.from('fr_installations').select('id', { count: 'exact', head: true }).eq('user_id', uid).gte('created_at', since)
+    const q = supabase.from('fr_installations').select('id', { count: 'exact', head: true }).gte('created_at', since)
+    const { count } = await (caller ? q.eq('user_id', uid) : q.eq('anon_token_hash', anon.dh))
     if ((count || 0) >= 20) return res.status(429).json({ error: 'Trop de demandes, réessayez plus tard' })
+    if (!caller) {
+      const { count: ipCount } = await supabase.from('fr_installations').select('id', { count: 'exact', head: true }).eq('ip_hash', anon.ih).gte('created_at', since)
+      if ((ipCount || 0) >= 10) return res.status(429).json({ error: 'Trop de demandes, réessayez plus tard' })
+    }
 
     const { error } = await supabase.from('fr_installations').insert(inst)
     if (error) {

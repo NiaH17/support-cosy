@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { anonCall, getDeviceToken } from '../lib/device'
 import { compressImage } from '../lib/images'
 import { CHECKS, PHOTOS, MODELS, DECLARATION, BUCKET } from '../lib/installFields'
 import PhotoField from '../components/PhotoField'
@@ -19,12 +20,14 @@ function SectionTitle({ n, children }) {
 
 export default function InstallRegisterPage({ session }) {
   const navigate = useNavigate()
-  const user = session.user
+  const user = session?.user || null // null = installer without a login (install is saved on this device)
+  const anon = !user
+  const uploadTokens = useRef({}) // anonymous uploads: path -> signed upload token
   const [form, setForm] = useState({
     install_date: today(),
     address: '',
-    lead_engineer: user.user_metadata?.full_name || '',
-    partner_contractor: user.user_metadata?.company_name || '', // filled in from the account's company
+    lead_engineer: user?.user_metadata?.full_name || '',
+    partner_contractor: user?.user_metadata?.company_name || '', // filled in from the account's company
     outdoor_serial: '',
     indoor_serial: '',
     model: '',
@@ -45,7 +48,9 @@ export default function InstallRegisterPage({ session }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   async function upload(path, blob, contentType) {
-    const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType, upsert: true })
+    const { error } = anon
+      ? await supabase.storage.from(BUCKET).uploadToSignedUrl(path, uploadTokens.current[path], blob, { contentType })
+      : await supabase.storage.from(BUCKET).upload(path, blob, { contentType, upsert: true })
     if (error) throw new Error(`Échec du téléversement (${error.message})`)
     return path
   }
@@ -60,13 +65,24 @@ export default function InstallRegisterPage({ session }) {
     const missingPhotos = PHOTOS.filter(p => photos[p.key].length === 0)
     if (missingPhotos.length) missing.push(`${missingPhotos.length} photo(s) manquante(s)`)
     if (!engSig || !custSig) missing.push('les deux signatures')
+    if (anon && !form.partner_contractor.trim()) missing.push("le nom de l'entreprise")
     if (!declared) missing.push('la déclaration')
     if (missing.length) { setError('Veuillez compléter : ' + missing.join(', ') + '.'); window.scrollTo({ top: 0, behavior: 'smooth' }); return }
 
     setSubmitting(true)
     try {
       const id = crypto.randomUUID()
-      const base = `${user.id}/${id}`
+      const base = anon ? `anon/${id}` : `${user.id}/${id}`
+      if (anon) {
+        // No login: ask the server for one-time upload links for exactly the files we are about to send
+        const names = [
+          ...PHOTOS.flatMap(p => photos[p.key].map((_, i) => `${p.key}-${i + 1}.jpg`)),
+          'signature-engineer.png', 'signature-customer.png',
+        ]
+        setProgress('Préparation…')
+        const { uploads } = await anonCall({ action: 'upload_urls', install_id: id, files: names })
+        uploadTokens.current = Object.fromEntries(uploads.map(u => [u.path, u.token]))
+      }
       const photoPaths = {}
       let done = 0
       const total = PHOTOS.reduce((n, p) => n + photos[p.key].length, 0) + 2
@@ -87,7 +103,7 @@ export default function InstallRegisterPage({ session }) {
       const token = (await supabase.auth.getSession()).data.session?.access_token
       const res = await fetch('/api/submit-installation', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', ...(anon ? { 'x-device-token': getDeviceToken() || '' } : { Authorization: `Bearer ${token}` }) },
         body: JSON.stringify({
           id, ...form, checks, photos: photoPaths,
           engineer_signature_path: engPath, engineer_signed_on: engDate,
@@ -149,6 +165,11 @@ export default function InstallRegisterPage({ session }) {
 
       <form onSubmit={handleSubmit} className="px-6 py-5 pb-16 space-y-6">
         {error && <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm text-red-700">{error}</div>}
+        {anon && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-xs text-blue-800">
+            Vous n'êtes pas connecté : l'installation sera enregistrée et retrouvable sur cet appareil uniquement (dans « Mes installations »). Téléchargez la copie PDF après l'envoi pour la conserver.
+          </div>
+        )}
 
         <div className="card space-y-4">
           <SectionTitle n={1}>Chantier et équipement</SectionTitle>
@@ -159,8 +180,8 @@ export default function InstallRegisterPage({ session }) {
           <div><label className="form-label">Ingénieur responsable<span className="text-red-400 ml-1">*</span></label>
             <input className="input-field" value={form.lead_engineer} onChange={e => set('lead_engineer', e.target.value)} required /></div>
           <div><label className="form-label">Partenaire / entreprise</label>
-            <input className={`input-field ${user.user_metadata?.company_name ? 'bg-gray-50' : ''}`} value={form.partner_contractor} readOnly={!!user.user_metadata?.company_name} onChange={e => set('partner_contractor', e.target.value)} /></div>
-          {user.email && <p className="text-xs text-gray-400 -mt-2">Enregistré par {user.user_metadata?.full_name ? `${user.user_metadata.full_name} · ` : ''}{user.email}</p>}
+            <input className={`input-field ${user?.user_metadata?.company_name ? 'bg-gray-50' : ''}`} value={form.partner_contractor} readOnly={!!user?.user_metadata?.company_name} required={anon} onChange={e => set('partner_contractor', e.target.value)} /></div>
+          {user?.email && <p className="text-xs text-gray-400 -mt-2">Enregistré par {user.user_metadata?.full_name ? `${user.user_metadata.full_name} · ` : ''}{user.email}</p>}
           <div><label className="form-label">Modèle<span className="text-red-400 ml-1">*</span></label>
             <select className="input-field" value={form.model} onChange={e => set('model', e.target.value)} required>
               <option value="">Sélectionner…</option>

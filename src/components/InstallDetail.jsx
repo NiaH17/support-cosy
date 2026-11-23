@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { CHECKS, PHOTOS, DECLARATION, BUCKET } from '../lib/installFields'
+import { anonCall } from '../lib/device'
 
 // Shows one install registration. lang 'fr' (installer) or 'en' (admin).
-export default function InstallDetail({ install, lang = 'fr', autoPrint = false }) {
+export default function InstallDetail({ install, lang = 'fr', autoPrint = false, anon = false }) {
   const [urls, setUrls] = useState({})
   const [ready, setReady] = useState(false)
   const L = lang === 'fr'
@@ -26,9 +27,16 @@ export default function InstallDetail({ install, lang = 'fr', autoPrint = false 
         install.engineer_signature_path, install.customer_signature_path,
       ].filter(Boolean)
       if (!paths.length) { setReady(true); return }
-      const { data } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 3600)
-      if (cancelled || !data) return
-      const map = Object.fromEntries(data.filter(d => d.signedUrl).map(d => [d.path, d.signedUrl]))
+      let map
+      if (anon) {
+        // No login: the server checks the device token and hands back short-lived links
+        try { map = (await anonCall({ action: 'urls', install_id: install.id })).urls } catch { setReady(true); return }
+      } else {
+        const { data } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 3600)
+        if (cancelled || !data) return
+        map = Object.fromEntries(data.filter(d => d.signedUrl).map(d => [d.path, d.signedUrl]))
+      }
+      if (cancelled) return
       // Wait for the images to load so the PDF isn't missing photos
       await Promise.all(Object.values(map).map(u => new Promise(r => { const im = new Image(); im.onload = im.onerror = r; im.src = u })))
       if (cancelled) return
@@ -47,7 +55,7 @@ export default function InstallDetail({ install, lang = 'fr', autoPrint = false 
     [L.date, fmt(install.install_date)], [L.address, install.address], [L.lead, install.lead_engineer],
     [L.partner, install.partner_contractor || '—'], [L.model, install.model], [L.outdoor, install.outdoor_serial],
     [L.indoor, install.indoor_serial || '—'], [L.hub, install.hub_serial],
-    [L.by, install.user_email || '—'], [L.on, new Date(install.created_at).toLocaleString(locale, { dateStyle: 'long', timeStyle: 'short' })],
+    [L.by, install.user_email || (lang === 'fr' ? 'Installateur (sans compte)' : 'Installer (no login)')], [L.on, new Date(install.created_at).toLocaleString(locale, { dateStyle: 'long', timeStyle: 'short' })],
   ]
 
   return (

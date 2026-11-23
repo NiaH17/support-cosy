@@ -2,6 +2,7 @@
 // Requires a logged-in caller. Sender role is decided server-side, never taken from the request body.
 import { supabase, getCaller } from './_auth.js'
 import { notifySlack, clip, APP_URL } from './_slack.js'
+import { sendPush } from './_push.js'
 
 const MAX_LEN = 4000
 
@@ -95,13 +96,27 @@ export default async function handler(req, res) {
     // Slack: customer replies, and replies from the UK team (internal notes are never sent)
     if (!internal) {
       const { data: t } = await supabase.from('fr_support_requests')
-        .select('id, user_name, user_email, installation_company, issue_type').eq('id', request_id).maybeSingle()
+        .select('id, user_id, company_id, user_name, user_email, installation_company, issue_type').eq('id', request_id).maybeSingle()
       const who = t ? `${t.user_name || t.user_email}${t.installation_company ? ` (${t.installation_company})` : ''}` : 'a partner'
       await notifySlack({
         title: sender === 'user' ? 'New reply from partner' : `Reply sent by ${caller.user.user_metadata?.full_name || caller.user.email}`,
         lines: [`Request: ${t?.issue_type || ''} · ${who}`, clip(message_en || message_fr)],
         url: `${APP_URL}/admin?ticket=${request_id}`,
       })
+      // Phone notification. Partners get a short generic message (nothing sensitive on a lock screen).
+      if (sender === 'admin') {
+        await sendPush({
+          audience: { userId: t?.user_id, companyId: t?.company_id },
+          payload: { title: 'Support Cosy', body: 'Nouvelle réponse à votre demande', url: `/mes-demandes?ticket=${request_id}`, tag: `ticket-${request_id}` },
+          excludeUserId: caller.user.id,
+        })
+      } else {
+        await sendPush({
+          audience: { staff: true },
+          payload: { title: 'New reply from partner', body: `${t?.installation_company || t?.user_name || t?.user_email || ''} · ${t?.issue_type || ''}`, url: `/admin?ticket=${request_id}`, tag: `ticket-${request_id}` },
+          excludeUserId: caller.user.id,
+        })
+      }
     }
 
     return res.status(200).json({ success: true, message: data })

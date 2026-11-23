@@ -2,16 +2,26 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import InstallDetail from '../components/InstallDetail'
+import { anonCall } from '../lib/device'
 
 export default function MyInstallsPage({ session }) {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const [installs, setInstalls] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const anon = !session // no login: installs saved on this device
   const selectedId = params.get('id')
   const selected = installs.find(i => i.id === selectedId)
 
   useEffect(() => {
+    if (anon) {
+      anonCall({ action: 'list' })
+        .then(({ installs }) => setInstalls(installs || []))
+        .catch(e => setLoadError(e.message))
+        .finally(() => setLoading(false))
+      return
+    }
     supabase.from('fr_installations').select('*') // own + company installs, via row-level security
       .order('created_at', { ascending: false })
       .then(({ data }) => { setInstalls(data || []); setLoading(false) })
@@ -31,10 +41,15 @@ export default function MyInstallsPage({ session }) {
         </div>
       </div>
       <div className="px-6 py-4 pb-12">
+        {anon && !selected && (
+          <p className="text-xs text-gray-400 mb-3">Sans connexion, vos installations sont retrouvables sur cet appareil uniquement.</p>
+        )}
         {loading ? (
           <div className="flex justify-center py-16"><div className="w-6 h-6 rounded-full border-2 border-brand-purple border-t-transparent animate-spin" /></div>
         ) : selected ? (
-          <InstallDetail install={selected} lang="fr" autoPrint={params.get('print') === '1'} />
+          <InstallDetail install={selected} lang="fr" anon={anon} autoPrint={params.get('print') === '1'} />
+        ) : loadError ? (
+          <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-sm text-red-700">{loadError}</div>
         ) : installs.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-400 text-sm mb-4">Aucune installation enregistrée.</p>
@@ -50,7 +65,7 @@ export default function MyInstallsPage({ session }) {
                   <span className="text-xs text-gray-400 flex-shrink-0">{new Date(i.install_date).toLocaleDateString('fr-FR')}</span>
                 </div>
                 <p className="text-xs text-gray-500 line-clamp-2 whitespace-pre-line">{i.address}</p>
-                {i.user_id !== session.user.id && i.lead_engineer && <p className="text-xs text-brand-purple mt-1">Par {i.lead_engineer}</p>}
+                {!anon && i.user_id !== session.user.id && i.lead_engineer && <p className="text-xs text-brand-purple mt-1">Par {i.lead_engineer}</p>}
                 {missing(i) > 0 && <p className="text-xs text-amber-600 mt-1.5">{missing(i)} contrôle(s) non coché(s)</p>}
               </button>
             ))}

@@ -72,21 +72,11 @@ export default function App() {
       {session && <GlobalNotifier session={session} />}
       <Routes>
         <Route path="/connexion" element={session ? <Navigate to="/" replace /> : <LoginPage denied={denied} />} />
-        <Route path="/" element={
-          <ProtectedRoute session={session}><HubPage session={session} /></ProtectedRoute>
-        } />
-        <Route path="/depannage" element={
-          <ProtectedRoute session={session}><TroubleshootingPage session={session} /></ProtectedRoute>
-        } />
-        <Route path="/depannage/test-ventilateur" element={
-          <ProtectedRoute session={session}><FanTestPage /></ProtectedRoute>
-        } />
-        <Route path="/depannage/test-onduleur" element={
-          <ProtectedRoute session={session}><InverterTestPage /></ProtectedRoute>
-        } />
-        <Route path="/informations" element={
-          <ProtectedRoute session={session}><InfoPage session={session} /></ProtectedRoute>
-        } />
+        <Route path="/" element={<HubPage session={session} />} />
+        <Route path="/depannage" element={<TroubleshootingPage session={session} />} />
+        <Route path="/depannage/test-ventilateur" element={<FanTestPage />} />
+        <Route path="/depannage/test-onduleur" element={<InverterTestPage />} />
+        <Route path="/informations" element={<InfoPage session={session} />} />
         <Route path="/assistance" element={
           <ProtectedRoute session={session}><SupportPage session={session} /></ProtectedRoute>
         } />
@@ -96,12 +86,8 @@ export default function App() {
         <Route path="/mot-de-passe" element={
           <ProtectedRoute session={session}><ChangePasswordPage /></ProtectedRoute>
         } />
-        <Route path="/installations/nouvelle" element={
-          <ProtectedRoute session={session}><InstallRegisterPage session={session} /></ProtectedRoute>
-        } />
-        <Route path="/installations" element={
-          <ProtectedRoute session={session}><MyInstallsPage session={session} /></ProtectedRoute>
-        } />
+        <Route path="/installations/nouvelle" element={<InstallRegisterPage session={session} />} />
+        <Route path="/installations" element={<MyInstallsPage session={session} />} />
         <Route path="/admin" element={
           <AdminRoute session={session}><AdminPage session={session} /></AdminRoute>
         } />

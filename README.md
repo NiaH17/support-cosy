@@ -51,6 +51,8 @@ Environment variables (set in Vercel for deployed copies):
 | `SUPABASE_SERVICE_ROLE_KEY` | API only | **Yes. Full database access. Never in git, chat or the front end.** |
 | `DEEPL_API_KEY` | API only | **Yes** |
 | `SLACK_WEBHOOK_URL` | API only | **Yes** (optional: posts new requests and replies to Slack) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | API only | Private key: **Yes**. Phone push notifications (optional). Generate with `npx web-push generate-vapid-keys`; subject is `mailto:you@example.com` |
+| `VITE_VAPID_PUBLIC_KEY` | front end | No. Same value as `VAPID_PUBLIC_KEY`; needed at build time for the "Activer les notifications" button |
 | `APP_URL` | API only | No (links in Slack messages; defaults to https://support-cosy.vercel.app) |
 
 ## Working on it (branches and releases)
@@ -77,6 +79,7 @@ Current order:
 5. `20261016b_app_access.sql` (access split between the two apps)
 6. `20261016c_user_delete_keeps_records.sql` (lets users be deleted)
 7. `20261123_companies.sql` (company profiles: colleagues share requests and installs; UK support role)
+8. `20261124_anon_installs_and_push.sql` (installs without a login, phone push subscriptions)
 
 Known gap: the live database also has tables and columns created earlier by hand that aren't in these files. These are `fr_support_messages`, the triage columns on `fr_support_requests`, `photo_urls`, `installation_company` and the `support-photos` bucket. Some of that SQL lives in the OctoAssist repo (`20260923_support_messages.sql`, `enable-realtime.sql`). Treat the live database as the source of truth, and add any new change as a new migration file.
 
